@@ -240,3 +240,31 @@ upstream_reviews_action_line_update_failed() {
   printf 'runs %s, not %s, and could not be updated - run: %s' \
     "${previous_release}" "${release}" "${install_command}"
 }
+
+# %% the gh stack line
+
+# gh_stack_line_ready: `gh` already runs the gh-stack extension.
+gh_stack_line_ready() {
+  local gh_version="$1"
+  printf 'ready (gh %s)' "${gh_version}"
+}
+
+# gh_stack_line_installed: install-gh-stack.sh installed what was missing.
+gh_stack_line_installed() {
+  local gh_version="$1"
+  printf 'installed (gh %s, gh stack)' "${gh_version}"
+}
+
+# gh_stack_line_installed_off_path: installed, but no later command sees it.
+gh_stack_line_installed_off_path() {
+  local gh_version="$1"
+  local gh_directory="$2"
+  printf 'installed (gh %s, gh stack) - put %s first on PATH to use it' \
+    "${gh_version}" "${gh_directory}"
+}
+
+# gh_stack_line_unavailable: `gh stack` does not run, and why.
+gh_stack_line_unavailable() {
+  local reason="$1"
+  printf 'unavailable - %s' "${reason}"
+}

@@ -71,6 +71,11 @@ nothing of basstler's:
 
 A project that wants every contributor to share the answer commits
 `upstream_repository = "<owner>/<name>"` in `.claude/basstler/stack.toml` instead.
+
+Stacks are GitHub's own stacked pull requests, kept with the `gh stack` extension. A cloud
+session installs it at its start; on your own machine install `gh` 2.90 or newer and run
+`gh extension install github/gh-stack` once. Every session start's `gh stack` line says whether
+it runs.
 `check-setup.sh --require-upstream` reports whether either names one.
 
 `/upstream-reviews` reads the upstream in your fork's own Actions, from a branch of

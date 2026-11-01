@@ -9,6 +9,7 @@ import subprocess
 from collections.abc import Sequence
 from dataclasses import dataclass
 from dataclasses import field as dataclasses_field
+from pathlib import Path
 
 from basstler.stack.model import (
     PullRequest,
@@ -27,6 +28,7 @@ from basstler.maintenance.github import ForkPullRequests
 
 from ..script_runner import PythonModuleRunner
 
+from .cascade import CascadeOfPlainRebases
 from .fork import (
     PromotionSampleText,
     MAINTENANCE_MODULE,
@@ -301,6 +303,13 @@ class AlreadyResolvedPass(MaintenancePass):
         :return: The stand-in that records writes instead of making them.
         """
         return self.recorded_fork
+
+    def cascade_in(self, working_directory: Path) -> CascadeOfPlainRebases:
+        """
+        :param working_directory: The checkout the stack's branches are rebased in.
+        :return: Plain git rebases standing in for ``gh stack``.
+        """
+        return CascadeOfPlainRebases(working_directory)
 
 
 def maintenance_runner(checkout: ForkCheckout) -> PythonModuleRunner:

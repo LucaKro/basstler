@@ -11,7 +11,6 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 from basstler.class_property import classproperty
-from basstler.exit_codes import CommandFailure, StackExitCode
 from basstler.locations import BasstlerVariable, ClaudeCodeVariable, PluginLocation
 
 
@@ -99,32 +98,6 @@ class UnsafeNotesPathError(DataclassException, ValueError):
 
     def suggest_correction(self) -> str:
         return "give a path relative to the branch's root, with no '..' component"
-
-
-@dataclass
-class UnresolvableReferenceError(CommandFailure, DataclassException, LookupError):
-    """
-    Raised when a git reference a decision depends on names no commit in the checkout.
-    """
-
-    @classproperty
-    def exit_code(cls) -> StackExitCode:
-        """:return: The status this kind of error ends a command with."""
-        return StackExitCode.GIT_COMMAND_FAILED
-
-    reference: str
-    """
-    The reference git could not resolve.
-    """
-
-    def error_message(self) -> str:
-        return f"git cannot resolve '{self.reference}' to a commit in this checkout"
-
-    def suggest_correction(self) -> str:
-        return (
-            "fetch the branch it names from its remote, and check that the branch "
-            "still exists there"
-        )
 
 
 @dataclass

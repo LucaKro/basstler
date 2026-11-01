@@ -4,8 +4,7 @@ The read-only reports the stack commands print about one derived stack.
 
 from __future__ import annotations
 
-import json
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from enum import StrEnum
 
 from basstler.class_property import classproperty
@@ -66,7 +65,7 @@ class StatusColumn(StrEnum):
 
     DRIFT = ("ahead/behind parent", 40)
     """
-    How far it and its parent have diverged, and how it integrates the parent.
+    How far it and its parent have diverged.
     """
 
     BEHIND_BASE = ("behind base", 11)
@@ -152,8 +151,7 @@ class StackReport:
                     branch.status,
                     branch.check_state,
                     f"#{branch.pull_request_number}",
-                    f"+{ahead}/-{behind_parent} "
-                    f"({branch.strategy} onto {branch.parent})",
+                    f"+{ahead}/-{behind_parent} (onto {branch.parent})",
                     CurrentCheckout.commit_count(f"{reference}..{upstream}"),
                 )
             )
@@ -275,14 +273,6 @@ class StackReport:
         """
         for branch in self.stack.promotion_order():
             logger.info(f"{branch.name}\t{branch.pull_request_number}")
-
-    def print_restack_plan(self) -> None:
-        """
-        Print the bottom-up restack plan as JSON, one object per not-yet-landed branch.
-        """
-        logger.info(
-            json.dumps([asdict(entry) for entry in self.stack.restack_plan()], indent=2)
-        )
 
     def print_reparents(self) -> None:
         """

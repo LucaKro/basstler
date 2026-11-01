@@ -267,6 +267,11 @@ class PluginLocation(PathEnumeration):
     Saves the user's personal settings to the personal-notes branch.
     """
 
+    STACK_EXTENSION_INSTALLATION_SCRIPT = HOOKS / "install-gh-stack.sh"
+    """
+    Makes ``gh stack`` runnable in the session, installing it in a cloud session.
+    """
+
     @property
     def path_under_exported_root(self) -> str:
         """

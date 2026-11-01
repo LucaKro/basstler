@@ -110,15 +110,20 @@ dashboard, kickoff and resolve run downstream reads as truth.
 
 So run this first, before the first edit:
 
-Create the branch and its draft pull request yourself, then hand the number
-over:
+Find where the branch goes, create the branch and its draft pull request
+yourself, put the pull request on its GitHub stack, then hand the number over:
 
 ```bash
-git checkout -b <branch> <base-branch>
+source "${BASSTLER_PLUGIN_ROOT}/hooks/resolve-personal-notes-config.sh"
+"${BASSTLER_PYTHON}" -m "${PLAN_ITEM_BOOTSTRAP_MODULE}" place \
+    --plan <plan-id> --item <item-id>
+# -> {"base": ..., "branches": [...], "pull_requests_below": [...], "repository": ...}
+git checkout -b <branch> origin/<base>
 git commit --allow-empty -m "Bootstrap <item-id>"
 git push -u origin <branch>
-# then create the draft pull request with your GitHub tool, and:
-source "${BASSTLER_PLUGIN_ROOT}/hooks/resolve-personal-notes-config.sh"
+# then create the draft pull request against <base> with your GitHub tool, and:
+"${BASSTLER_PYTHON}" -m "${STACK_MODULE}" register --repository <repository> \
+    --pull-request <number> --below <every number in pull_requests_below>
 "${BASSTLER_PYTHON}" -m "${PLAN_ITEM_BOOTSTRAP_MODULE}" open \
     --plan <plan-id> --item <item-id> \
     --branch <branch> --base <base-branch> \
@@ -146,9 +151,23 @@ there for an unattended run whose credential is a real one; if you use it,
 `open` publishes the branch too, so the three git commands above are yours to
 skip.
 
-The branch name and the base branch are this skill's judgment, not the
-script's: the base comes from step 1's dependency readiness, and the branch
-from whatever this session is designated to develop on.
+An item that builds on unlanded items is a layer of a GitHub stack of pull
+requests on the fork: `place` names the branch below it, and `register` puts
+its pull request on top of the stack that branch's pull request is in -
+creating the stack when none of them is in one yet, changing nothing when run
+again, and doing nothing for an item with nothing unlanded below it.
+
+- `place` exits 13 (`unstackable-item`) when the item rests on two unlanded
+  items at once, on one with no branch yet, or on one in another repository. A
+  stack is a single line, so that is a question for the user - land one first,
+  or change the plan's `depends_on` - never a base to pick.
+- `dependencies_in_other_plans` lists the dependencies `place` did not follow.
+  Check their readiness as step 1 did before building on the base it named.
+- `register` exits 12 (`layer-taken`) when the pull request below already has
+  another stacked on it. Raise it with the user the same way.
+
+The branch name is this skill's judgment, not the script's: whatever this
+session is designated to develop on. The base is `place`'s.
 
 **Write the settled plan down in both places it belongs**, rather than
 leaving it only in the conversation that produced it — in `auto` mode this is

@@ -1,38 +1,39 @@
 """
 Tests for fast-forwarding the fork's base and restacking its branches, the whole stack
-or one subtree, against a real scratch fork.
+or one subtree, against a real scratch fork, with plain git rebases standing in for ``gh
+stack``.
 """
 
 from __future__ import annotations
 
 import argparse
-from dataclasses import replace
+from collections.abc import Sequence
+from dataclasses import dataclass, replace
+from pathlib import Path
 
 import pytest
 
 from basstler.exit_codes import StackExitCode
-from basstler.stack.commit_move import RefusalReason
-from basstler.stack.model import (
-    IntegrationStrategy,
-    PullRequest,
-)
+from basstler.stack.cascading_rebase import CascadeStep, CascadeStepOutcome
+from basstler.stack.model import PullRequest
 
 from basstler.maintenance.commands import RestackCommand
 from basstler.maintenance.fast_forward import (
     FastForwardOutcome,
     fast_forward,
 )
-from basstler.maintenance.git_commands import GitCommandFailed, ProposedPush
-from basstler.maintenance.restack_procedure import restack
-from basstler.maintenance.restack_steps import (
+from basstler.maintenance.git_commands import GitCommandFailed
+from basstler.maintenance.restack import (
     ConflictResponse,
     LeaveItToTheCaller,
     RestackOutcome,
     TellTheBranchOwner,
+    restack,
 )
 
-from ..constants.stack import RemoteName, StackBranch, StackLabel
+from ..constants.stack import RemoteName, StackBranch
 
+from .cascade import CascadeOfPlainRebases
 from .fork import (
     PullRequestHeadRepository,
     UPSTREAM_BASE,
@@ -41,6 +42,7 @@ from .fork import (
     ForkCheckout,
     a_stack,
     a_parent_and_child,
+    a_board_entry,
     the_board,
 )
 from .recorded_fork import (
@@ -140,24 +142,77 @@ def test_a_refused_push_of_the_fork_base_stops_the_pass(fork_checkout: ForkCheck
 # %% restack
 
 
-def an_unrelated_history_on(fork_checkout: ForkCheckout, branch: str) -> None:
+@dataclass(frozen=True)
+class CascadeThatCannotRebase(CascadeOfPlainRebases):
     """
-    Republish a branch on a root commit of its own, sharing no history with the stack.
-
-    A merge refuses this outright, so it is a way to stop an integration before it
-    begins that depends on nothing but what the fork carries.
-
-    :param fork_checkout: The checkout to republish the branch from.
-    :param branch: The branch to republish.
+    A cascade whose every rebase fails without conflicting on anything, as one does
+    whose tooling is missing or whose checkout is in a state it refuses.
     """
-    fork_checkout.run_git("checkout", "--quiet", "--orphan", "an-unrelated-root")
-    fork_checkout.run_git("rm", "--quiet", "-rf", ".")
-    fork_checkout.commit("an-unrelated-file", "a history of its own\n")
-    fork_checkout.run_git("branch", "--force", branch, "HEAD")
-    fork_checkout.run_git(
-        "push", "--quiet", "--force", RemoteName.ORIGIN, f"{branch}:{branch}"
+
+    detail: str = "the cascade could not run"
+    """
+    What the failing rebase says.
+    """
+
+    def rebase_up_to(self, branch: str) -> CascadeStep:
+        return CascadeStep(CascadeStepOutcome.FAILED, self.detail)
+
+    def abort_rebase(self) -> CascadeStep:
+        return CascadeStep(CascadeStepOutcome.COMPLETED)
+
+
+@dataclass(frozen=True)
+class CascadeRacedBySomebodyElse(CascadeOfPlainRebases):
+    """
+    A cascade whose push loses a race: somebody else publishes the top layer between its
+    rebase and its push, from elsewhere, so this checkout never sees it.
+    """
+
+    fork_checkout: ForkCheckout | None = None
+    """
+    The checkout the other push is made from.
+    """
+
+    racing_commits: list[str] | None = None
+    """
+    Where the commit the other push published is recorded, for the test to read back.
+    """
+
+    def publish(self) -> CascadeStep:
+        checkout = self.fork_checkout
+        checkout.run_git(
+            "checkout", "--quiet", "--detach", f"origin/{StackBranch.CHILD}"
+        )
+        self.racing_commits.append(
+            checkout.commit(FixtureFile.PUSHED_BY_SOMEBODY_ELSE, "not ours\n")
+        )
+        checkout.run_git(
+            "push", "--quiet", checkout.fork_path.as_uri(), f"HEAD:{StackBranch.CHILD}"
+        )
+        return super().publish()
+
+
+def the_parent_moved(fork_checkout: ForkCheckout) -> str:
+    """
+    Publish a new commit on the parent, so everything stacked on it is behind.
+
+    :param fork_checkout: The checkout to commit in.
+    :return: The parent's new published commit.
+    """
+    return fork_checkout.commit_on(
+        StackBranch.PARENT,
+        fork_checkout.own_file(StackBranch.PARENT),
+        "the parent moved\n",
     )
-    fork_checkout.run_git("fetch", "--quiet", RemoteName.ORIGIN)
+
+
+def outcome_of(outcomes: Sequence, branch: str):
+    """
+    :param outcomes: What a restack returned.
+    :param branch: The branch whose outcome is wanted.
+    :return: That branch's outcome.
+    """
+    return next(outcome for outcome in outcomes if outcome.branch == branch)
 
 
 def test_a_branch_whose_parent_has_not_moved_is_reported_up_to_date(
@@ -166,7 +221,10 @@ def test_a_branch_whose_parent_has_not_moved_is_reported_up_to_date(
     a_parent_and_child(fork_checkout)
 
     outcomes = restack(
-        a_stack(fork_checkout, the_board()), fork_checkout.git, RecordingPullRequests()
+        a_stack(fork_checkout, the_board()),
+        fork_checkout.git,
+        RecordingPullRequests(),
+        CascadeOfPlainRebases,
     )
 
     assert [outcome.outcome for outcome in outcomes] == [
@@ -175,29 +233,83 @@ def test_a_branch_whose_parent_has_not_moved_is_reported_up_to_date(
     ]
 
 
-def test_a_branch_whose_parent_moved_is_integrated_and_pushed(
+def test_a_branch_whose_parent_moved_is_rebased_onto_it_and_pushed(
     fork_checkout: ForkCheckout,
 ):
+    """
+    A stack keeps a line of history: the child is replayed onto the parent's new tip
+    rather than merged with it.
+    """
     a_parent_and_child(fork_checkout)
-    fork_checkout.commit_on(
-        StackBranch.PARENT,
-        fork_checkout.own_file(StackBranch.PARENT),
-        "the parent moved\n",
-    )
+    moved = the_parent_moved(fork_checkout)
     before = fork_checkout.published_commit(RemoteName.ORIGIN, StackBranch.CHILD)
 
     outcomes = restack(
-        a_stack(fork_checkout, the_board()), fork_checkout.git, RecordingPullRequests()
+        a_stack(fork_checkout, the_board()),
+        fork_checkout.git,
+        RecordingPullRequests(),
+        CascadeOfPlainRebases,
     )
 
-    child = next(outcome for outcome in outcomes if outcome.branch == StackBranch.CHILD)
-    assert child.outcome == RestackOutcome.PUSHED
+    child = outcome_of(outcomes, StackBranch.CHILD)
     after = fork_checkout.published_commit(RemoteName.ORIGIN, StackBranch.CHILD)
-    assert after != before
-    assert child.pushed_commit == after
+    assert child.outcome == RestackOutcome.PUSHED
+    assert child.pushed_commit == after != before
+    assert fork_checkout.git.contains(moved, after)
+    merges = fork_checkout.run_git(
+        "rev-list", "--merges", "--count", f"{UPSTREAM_BASE}..{after}"
+    )
+    assert merges == "0"
 
 
-def test_a_conflicting_integration_pushes_nothing_and_names_the_files(
+def test_the_cascade_is_handed_each_line_on_its_trunk(fork_checkout: ForkCheckout):
+    a_parent_and_child(fork_checkout)
+    cascades: list[CascadeOfPlainRebases] = []
+
+    def recorded_cascade(working_directory: Path) -> CascadeOfPlainRebases:
+        cascades.append(CascadeOfPlainRebases(working_directory))
+        return cascades[-1]
+
+    restack(
+        a_stack(fork_checkout, the_board()),
+        fork_checkout.git,
+        RecordingPullRequests(),
+        recorded_cascade,
+    )
+
+    assert cascades[0].adopted == [
+        (UPSTREAM_BASE, (StackBranch.PARENT, StackBranch.CHILD))
+    ]
+
+
+def test_a_second_child_of_one_parent_is_restacked_as_a_line_of_its_own(
+    fork_checkout: ForkCheckout,
+):
+    """
+    A GitHub stack is a single line, so a parent carrying two children leaves one of
+    them to a line based on the parent's branch - which still takes the parent's move.
+    """
+    a_parent_and_child(fork_checkout)
+    fork_checkout.branch_from(StackBranch.SIBLING, StackBranch.PARENT)
+    moved = the_parent_moved(fork_checkout)
+    board = the_board() + [a_board_entry(42, StackBranch.SIBLING, StackBranch.PARENT)]
+
+    outcomes = restack(
+        a_stack(fork_checkout, board),
+        fork_checkout.git,
+        RecordingPullRequests(),
+        CascadeOfPlainRebases,
+    )
+
+    sibling = outcome_of(outcomes, StackBranch.SIBLING)
+    assert sibling.parent == StackBranch.PARENT
+    assert sibling.outcome == RestackOutcome.PUSHED
+    assert fork_checkout.git.contains(
+        moved, f"{RemoteName.ORIGIN}/{StackBranch.SIBLING}"
+    )
+
+
+def test_a_conflicting_rebase_pushes_nothing_and_names_the_files(
     fork_checkout: ForkCheckout,
 ):
     a_parent_and_child(fork_checkout)
@@ -210,10 +322,13 @@ def test_a_conflicting_integration_pushes_nothing_and_names_the_files(
     before = fork_checkout.published_commit(RemoteName.ORIGIN, StackBranch.CHILD)
 
     outcomes = restack(
-        a_stack(fork_checkout, the_board()), fork_checkout.git, RecordingPullRequests()
+        a_stack(fork_checkout, the_board()),
+        fork_checkout.git,
+        RecordingPullRequests(),
+        CascadeOfPlainRebases,
     )
 
-    child = next(outcome for outcome in outcomes if outcome.branch == StackBranch.CHILD)
+    child = outcome_of(outcomes, StackBranch.CHILD)
     assert child.outcome == RestackOutcome.CONFLICT
     assert child.conflicting_paths == (FixtureFile.CONTESTED,)
     assert (
@@ -221,182 +336,132 @@ def test_a_conflicting_integration_pushes_nothing_and_names_the_files(
     )
 
 
-def test_an_integration_stopped_before_it_began_is_not_reported_as_a_conflict(
+def test_a_line_based_on_a_conflicted_branch_is_reported_blocked(
     fork_checkout: ForkCheckout,
 ):
     """
-    A merge exits non-zero for reasons that leave nothing conflicted at all - here a
-    parent whose history shares no root with the branch. Reading any failure as a
-    conflict labels a branch that merges perfectly well and sends its owner a report
-    naming no files.
+    The sibling's line is based on the child's branch, which did not take the parent's
+    move, so rebasing onto it would build on what the pass meant to replace.
     """
     a_parent_and_child(fork_checkout)
-    an_unrelated_history_on(fork_checkout, StackBranch.PARENT)
+    fork_checkout.branch_from(StackBranch.GRANDCHILD, StackBranch.CHILD)
+    fork_checkout.branch_from(StackBranch.SIBLING, StackBranch.CHILD)
+    fork_checkout.commit_on(
+        StackBranch.PARENT, FixtureFile.CONTESTED, "the parent's version\n"
+    )
+    fork_checkout.commit_on(
+        StackBranch.CHILD, FixtureFile.CONTESTED, "the child's version\n"
+    )
+    board = the_board() + [
+        a_board_entry(42, StackBranch.GRANDCHILD, StackBranch.CHILD),
+        a_board_entry(43, StackBranch.SIBLING, StackBranch.CHILD),
+    ]
+
+    outcomes = restack(
+        a_stack(fork_checkout, board),
+        fork_checkout.git,
+        RecordingPullRequests(),
+        CascadeOfPlainRebases,
+    )
+
+    sibling = outcome_of(outcomes, StackBranch.SIBLING)
+    assert sibling.outcome == RestackOutcome.BLOCKED_BY_ANCESTOR
+    assert sibling.blocking_ancestor == StackBranch.CHILD
+
+
+def test_a_rebase_that_fails_without_a_conflict_is_not_reported_as_one(
+    fork_checkout: ForkCheckout,
+):
+    """
+    A cascade fails for reasons that leave nothing conflicted at all.
+
+    Reading any failure as a conflict labels a branch that rebases perfectly well and
+    sends its owner a report naming no files.
+    """
+    a_parent_and_child(fork_checkout)
+    the_parent_moved(fork_checkout)
     before = fork_checkout.published_commit(RemoteName.ORIGIN, StackBranch.CHILD)
     fork = RecordingPullRequests()
 
-    outcomes = restack(a_stack(fork_checkout, the_board()), fork_checkout.git, fork)
+    outcomes = restack(
+        a_stack(fork_checkout, the_board()),
+        fork_checkout.git,
+        fork,
+        CascadeThatCannotRebase,
+    )
 
-    child = next(outcome for outcome in outcomes if outcome.branch == StackBranch.CHILD)
+    child = outcome_of(outcomes, StackBranch.CHILD)
     assert child.outcome == RestackOutcome.INTEGRATION_FAILED
-    assert child.conflicting_paths == ()
-    assert "refusing to merge unrelated histories" in child.explanation
+    assert child.explanation == CascadeThatCannotRebase.detail
     assert fork.label_writes == []
     assert fork.comments == []
-    assert child.reported_at is None
     assert (
         fork_checkout.published_commit(RemoteName.ORIGIN, StackBranch.CHILD) == before
     )
 
 
-def test_a_rebase_labelled_branch_is_rebased_rather_than_merged(
+def test_a_branch_that_moved_under_the_pass_is_rebased_rather_than_overwritten(
     fork_checkout: ForkCheckout,
 ):
     """
-    The strategy is the only thing that authorises a force-push, so it has to come from
-    the label rather than from the executor's own judgement.
+    The rebase starts from the branch's published tip, not from whatever this checkout
+    last saw, so work pushed by somebody else survives the restack.
     """
     a_parent_and_child(fork_checkout)
-    fork_checkout.commit_on(
-        StackBranch.PARENT,
-        fork_checkout.own_file(StackBranch.PARENT),
-        "the parent moved\n",
-    )
-
-    outcomes = restack(
-        a_stack(fork_checkout, the_board(labels=[StackLabel.REBASE])),
-        fork_checkout.git,
-        RecordingPullRequests(),
-    )
-
-    child = next(outcome for outcome in outcomes if outcome.branch == StackBranch.CHILD)
-    assert child.strategy == IntegrationStrategy.REBASE
-    assert child.outcome == RestackOutcome.PUSHED
-    merges = fork_checkout.run_git(
-        "rev-list",
-        "--merges",
-        "--count",
-        f"origin/{UPSTREAM_BASE}..origin/{StackBranch.CHILD}",
-    )
-    assert merges == "0"
-
-
-def test_only_the_rebase_strategy_authorises_rewriting_published_history():
-    """
-    Forcing is decided in exactly one place, so that is where it is pinned - a test that
-    a push happened cannot tell a fast-forward from an overwrite.
-    """
-    configuration = make_configuration()
-
-    merging = ProposedPush.publishing(
-        configuration, "a-branch", IntegrationStrategy.MERGE
-    )
-    rebasing = ProposedPush.publishing(
-        configuration, "a-branch", IntegrationStrategy.REBASE
-    )
-
-    assert not merging.with_lease
-    assert rebasing.with_lease
-
-
-def test_a_branch_that_moved_under_the_pass_is_incorporated_rather_than_overwritten(
-    fork_checkout: ForkCheckout,
-):
-    """
-    The integration starts from the branch's published tip, not from whatever this
-    checkout last saw, so work pushed by somebody else survives the restack.
-    """
-    a_parent_and_child(fork_checkout)
-    fork_checkout.commit_on(
-        StackBranch.PARENT,
-        fork_checkout.own_file(StackBranch.PARENT),
-        "the parent moved\n",
-    )
+    the_parent_moved(fork_checkout)
     fork_checkout.run_git(
         "checkout", "--quiet", "-B", "a-side-line", f"origin/{StackBranch.CHILD}"
     )
-    somebody_else_s = fork_checkout.commit(
-        FixtureFile.PUSHED_BY_SOMEBODY_ELSE, "not ours\n"
-    )
+    fork_checkout.commit(FixtureFile.PUSHED_BY_SOMEBODY_ELSE, "not ours\n")
     fork_checkout.run_git(
         "push", "--quiet", RemoteName.ORIGIN, f"a-side-line:{StackBranch.CHILD}"
     )
     fork_checkout.run_git("fetch", "--quiet", RemoteName.ORIGIN)
 
     outcomes = restack(
-        a_stack(fork_checkout, the_board()), fork_checkout.git, RecordingPullRequests()
+        a_stack(fork_checkout, the_board()),
+        fork_checkout.git,
+        RecordingPullRequests(),
+        CascadeOfPlainRebases,
     )
 
-    child = next(outcome for outcome in outcomes if outcome.branch == StackBranch.CHILD)
-    assert child.outcome == RestackOutcome.PUSHED
-    assert fork_checkout.git.contains(somebody_else_s, f"origin/{StackBranch.CHILD}")
+    assert outcome_of(outcomes, StackBranch.CHILD).outcome == RestackOutcome.PUSHED
+    assert (
+        fork_checkout.published_file(
+            RemoteName.ORIGIN, StackBranch.CHILD, FixtureFile.PUSHED_BY_SOMEBODY_ELSE
+        )
+        == "not ours\n"
+    )
 
 
-def test_a_rebase_whose_lease_has_expired_is_rejected_rather_than_forced_through(
+def test_a_push_somebody_else_raced_is_rejected_rather_than_forced_through(
     fork_checkout: ForkCheckout,
 ):
     """
     The lease is what stops a rebase overwriting a push this pass never saw.
-
-    Staleness is arranged by winding the remote-tracking ref back, which is the state a
-    concurrent push leaves this checkout in.
     """
     a_parent_and_child(fork_checkout)
-    fork_checkout.commit_on(
-        StackBranch.PARENT,
-        fork_checkout.own_file(StackBranch.PARENT),
-        "the parent moved\n",
-    )
-    stale = fork_checkout.published_commit(RemoteName.ORIGIN, StackBranch.CHILD)
-    somebody_else_s = fork_checkout.commit_on(
-        StackBranch.CHILD, FixtureFile.PUSHED_BY_SOMEBODY_ELSE, "not ours\n"
-    )
-    fork_checkout.run_git(
-        "update-ref", f"refs/remotes/origin/{StackBranch.CHILD}", stale
-    )
+    the_parent_moved(fork_checkout)
+    racing_commits: list[str] = []
+
+    def raced_cascade(working_directory: Path) -> CascadeRacedBySomebodyElse:
+        return CascadeRacedBySomebodyElse(
+            working_directory,
+            fork_checkout=fork_checkout,
+            racing_commits=racing_commits,
+        )
 
     outcomes = restack(
-        a_stack(fork_checkout, the_board(labels=[StackLabel.REBASE])),
+        a_stack(fork_checkout, the_board()),
         fork_checkout.git,
         RecordingPullRequests(),
+        raced_cascade,
     )
 
-    child = next(outcome for outcome in outcomes if outcome.branch == StackBranch.CHILD)
-    assert child.outcome == RestackOutcome.PUSH_REJECTED
-    assert fork_checkout.commit_on_the_fork(StackBranch.CHILD) == somebody_else_s
-
-
-def test_a_push_the_move_checks_refuse_is_not_made(fork_checkout: ForkCheckout):
-    """
-    A parent that has swallowed its own child would, once pushed, make the child an
-    ancestor of its own base - which GitHub reads as the child having merged and closes
-    its pull request. The refusal is asserted as its reason rather than as the sentence
-    explaining it.
-    """
-    a_parent_and_child(fork_checkout)
-    fork_checkout.run_git("checkout", "--quiet", StackBranch.PARENT)
-    fork_checkout.run_git("merge", "--quiet", "--no-edit", StackBranch.CHILD)
-    fork_checkout.run_git(
-        "push",
-        "--quiet",
-        RemoteName.ORIGIN,
-        f"{StackBranch.PARENT}:{StackBranch.PARENT}",
+    assert outcome_of(outcomes, StackBranch.CHILD).outcome == (
+        RestackOutcome.PUSH_REJECTED
     )
-    fork_checkout.commit_on(UPSTREAM_BASE, FixtureFile.ON_THE_BASE, "the base moved\n")
-    before = fork_checkout.published_commit(RemoteName.ORIGIN, StackBranch.PARENT)
-
-    outcomes = restack(
-        a_stack(fork_checkout, the_board()), fork_checkout.git, RecordingPullRequests()
-    )
-
-    parent = next(
-        outcome for outcome in outcomes if outcome.branch == StackBranch.PARENT
-    )
-    assert parent.outcome == RestackOutcome.REFUSED
-    assert RefusalReason.FALSE_MERGE in parent.refusals
-    assert (
-        fork_checkout.published_commit(RemoteName.ORIGIN, StackBranch.PARENT) == before
-    )
+    assert fork_checkout.commit_on_the_fork(StackBranch.CHILD) == racing_commits[0]
 
 
 # %% restacking one subtree, for a fix just made below it
@@ -448,6 +513,7 @@ def test_naming_a_branch_restacks_everything_stacked_on_it(
         a_stack(fork_checkout, the_deeper_board()),
         fork_checkout.git,
         RecordingPullRequests(),
+        CascadeOfPlainRebases,
         stacked_on=StackBranch.PARENT,
     )
 
@@ -474,6 +540,7 @@ def test_naming_a_branch_leaves_the_rest_of_the_board_where_it_was(
         a_stack(fork_checkout, the_deeper_board()),
         fork_checkout.git,
         RecordingPullRequests(),
+        CascadeOfPlainRebases,
         stacked_on=StackBranch.PARENT,
     )
 
@@ -499,6 +566,7 @@ def test_a_collision_with_the_fix_is_handed_back_rather_than_reported_to_its_own
         a_stack(fork_checkout, the_board()),
         fork_checkout.git,
         fork,
+        CascadeOfPlainRebases,
         stacked_on=StackBranch.PARENT,
     )
 
@@ -525,14 +593,17 @@ def test_a_branch_above_a_collision_is_reported_blocked_rather_than_up_to_date(
         StackBranch.CHILD, FixtureFile.CONTESTED, "the child's version\n"
     )
     fork_checkout.run_git("checkout", "--quiet", StackBranch.GRANDCHILD)
-    fork_checkout.run_git("merge", "--quiet", "--no-edit", StackBranch.CHILD)
-    fork_checkout.run_git("push", "--quiet", "origin", StackBranch.GRANDCHILD)
+    fork_checkout.run_git("rebase", "--quiet", StackBranch.CHILD)
+    fork_checkout.run_git(
+        "push", "--quiet", "--force", "origin", StackBranch.GRANDCHILD
+    )
     before = fork_checkout.published_commit("origin", StackBranch.GRANDCHILD)
 
     outcomes = restack(
         a_stack(fork_checkout, the_deeper_board()),
         fork_checkout.git,
         RecordingPullRequests(),
+        CascadeOfPlainRebases,
         stacked_on=StackBranch.PARENT,
     )
 

@@ -17,9 +17,8 @@ from basstler.github_labels import GitHubLabel
 from basstler.maintenance.fast_forward import FastForwardOutcome, FastForwardReport
 from basstler.maintenance.promotion import Promotion
 from basstler.maintenance.report import MaintenanceReport
-from basstler.maintenance.restack_steps import BranchOutcome, RestackOutcome
+from basstler.maintenance.restack import BranchOutcome, RestackOutcome
 from basstler.stack.model import (
-    IntegrationStrategy,
     PullRequest,
     Reparent,
     SkippedPullRequest,
@@ -222,9 +221,7 @@ class LargeBoard:
         :param detail: Any further :class:`BranchOutcome` fields.
         :return: The outcome, integrating the parent by merge.
         """
-        return BranchOutcome(
-            branch, UPSTREAM_BASE, IntegrationStrategy.MERGE, outcome, **detail
-        )
+        return BranchOutcome(branch, UPSTREAM_BASE, outcome, **detail)
 
     def conflict(self, branch: str, files: int) -> BranchOutcome:
         """

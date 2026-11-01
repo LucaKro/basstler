@@ -129,6 +129,12 @@ class PlanItemBootstrapExitCode(ExitCode):
     The save reported success, but the notes branch does not carry the edit.
     """
 
+    UNSTACKABLE_ITEM = 13
+    """
+    The item's dependencies do not form one line of branches below it, so it cannot be
+    a layer of a GitHub stack; stderr says why.
+    """
+
 
 class ReportKey(StrEnum):
     """
@@ -209,6 +215,26 @@ class ReportKey(StrEnum):
     PREVIOUS_STATUS = "previous_status"
     """
     The status an item carried before a write.
+    """
+
+    BASE = "base"
+    """
+    The branch an item's branch is cut from and its pull request based on.
+    """
+
+    BRANCHES = "branches"
+    """
+    The branches of an item's stack, bottom first, ending with the item's own.
+    """
+
+    PULL_REQUESTS_BELOW = "pull_requests_below"
+    """
+    The pull requests of the layers below an item, bottom first.
+    """
+
+    DEPENDENCIES_IN_OTHER_PLANS = "dependencies_in_other_plans"
+    """
+    The dependencies naming another plan's items, which a placement does not follow.
     """
 
 

@@ -8,8 +8,8 @@ set -euo pipefail
 # syncs personal settings and git identity, keeps the package environment
 # installed, stamps the plan state SHA for plan-updates-since.sh, fast-forwards
 # the default branch to the upstream (see basstler.maintenance.default_branch_sync),
-# brings the fork's upstream-reviews Action to this session's release, and
-# prints a summary of what it did. Never fails the session on a setup gap.
+# brings the fork's upstream-reviews Action to this session's release, makes
+# `gh stack` runnable, and prints a summary of what it did. Never fails the session on a setup gap.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/resolve-personal-notes-config.sh"
@@ -279,6 +279,10 @@ if ACTION_STATE="$("${BASSTLER_PYTHON}" -m "${UPSTREAM_REVIEWS_ACTION_MODULE}" \
   esac
 fi
 
+# gh stack, which the maintenance pass and the plan item skills rebase and push
+# stacks with. Installed only in a cloud session; never fatal.
+SUMMARY_GH_STACK="$(bash "${INSTALL_GH_STACK_SCRIPT}" 2>/dev/null)" || true
+
 # Setup verdict from check-setup.sh, run last so it sees what this run wrote.
 SUMMARY_SETUP="$(setup_line_not_checked "${CHECK_SETUP_SCRIPT}")"
 if [ -f "${CHECK_SETUP_SCRIPT}" ]; then
@@ -304,6 +308,7 @@ session-start.sh summary:
   git identity:    ${SUMMARY_GIT_IDENTITY}
   dependencies:    ${SUMMARY_DEPENDENCIES}
   reviews Action:  ${SUMMARY_UPSTREAM_REVIEWS_ACTION}
+  gh stack:        ${SUMMARY_GH_STACK}
   setup:           ${SUMMARY_SETUP}
   plan state SHA:  $(last_recorded_plan_state_sha) (run plan-updates-since.sh <plan-id> to recheck from here later)
 SUMMARY

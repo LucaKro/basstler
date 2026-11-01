@@ -24,7 +24,6 @@ from basstler.stack.settings import Configuration
 from basstler.upstream_reviews.vocabulary import RollupState
 
 import basstler.maintenance.__main__
-import basstler.maintenance.restack_procedure
 from basstler.locations import ProjectLocation
 from basstler.maintenance.board import (
     BoardExport,
@@ -34,10 +33,7 @@ from basstler.maintenance.board import (
     PullRequestRecord,
     UpstreamPullRequests,
 )
-from basstler.maintenance.git_commands import (
-    BranchAncestry,
-    GitCommandRunner,
-)
+from basstler.maintenance.git_commands import GitCommandRunner
 
 from ..scratch_repository import initialize_bare_repository
 from ..constants.paths import DatasetLocation
@@ -187,7 +183,6 @@ def make_configuration() -> Configuration:
     """
     return Configuration(
         in_review_label=StackLabel.IN_REVIEW,
-        rebase_label=StackLabel.REBASE,
         needs_resolution_label=StackLabel.NEEDS_RESOLUTION,
         fork_repository=PullRequestHeadRepository.FORK.value,
         fork_remote=RemoteName.ORIGIN,
@@ -399,10 +394,9 @@ def a_stack(checkout: ForkCheckout, pull_requests: list[PullRequest]):
     """
     configuration = make_configuration()
     upstream = f"{configuration.upstream_remote}/{configuration.upstream_base}"
-    ancestry = BranchAncestry(configuration, checkout.git)
 
     def is_merged(name: str) -> bool:
-        return ancestry.is_ancestor(name, upstream)
+        return checkout.git.contains(configuration.reference_on_fork(name), upstream)
 
     return Stack.build(configuration, pull_requests, is_merged)
 

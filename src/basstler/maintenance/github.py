@@ -16,7 +16,7 @@ import urllib.parse
 import urllib.request
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum, StrEnum
 from pathlib import Path
 from typing import Any
@@ -30,6 +30,7 @@ from basstler.maintenance.board import CommitChecks, PullRequestRecord
 from basstler.environment import GitHubCredentialVariable
 from basstler.maintenance.exceptions import ExternalCallFailed
 from basstler.repository import GitHubAddress, Repository
+from basstler.stack.pull_request_stacks import PullRequestStacks, RegisteredStack
 from basstler.upstream_reviews.pull_request_models import CheckStatus
 from basstler.upstream_reviews.rest_models import (
     RestCheckRunPage,
@@ -180,6 +181,11 @@ class RepositoryPath(PathEnumeration):
     The repository's commits.
     """
 
+    STACKS = Path("/stacks")
+    """
+    The stacks the repository's pull requests are grouped in.
+    """
+
 
 class CommitReport(StrEnum):
     """
@@ -215,6 +221,32 @@ class ListingParameter(StrEnum):
     PAGE = "page"
     """
     Which page to read, counting from one.
+    """
+
+    PULL_REQUEST = "pull_request"
+    """
+    Which pull request a stack listing is narrowed to the stack of.
+    """
+
+
+class StacksApi(StrEnum):
+    """
+    What a call to GitHub's stacks endpoints carries beyond any other call.
+    """
+
+    VERSION = "2026-03-10"
+    """
+    The API version the stacks endpoints are served under.
+    """
+
+    PULL_REQUESTS = "pull_requests"
+    """
+    The key a create or add call names its pull requests under.
+    """
+
+    ADD = "add"
+    """
+    The path below a stack that puts pull requests on top of it.
     """
 
 
@@ -322,7 +354,11 @@ class GitHubRequestFailed(CommandFailure, ExternalCallFailed):
 
 @dataclass(frozen=True)
 class GitHubRepository(
-    ForkPullRequests, CommitChecks, RepositoryLabels, CredentialHolder
+    ForkPullRequests,
+    CommitChecks,
+    RepositoryLabels,
+    CredentialHolder,
+    PullRequestStacks,
 ):
     """
     Every pull-request and label call this tooling makes, against one repository.
@@ -344,6 +380,11 @@ class GitHubRepository(
     page_size: int = 100
     """
     How many pull requests or labels to ask for per request.
+    """
+
+    api_version: str | None = None
+    """
+    The API version every call is made under, ``None`` for GitHub's default one.
     """
 
     @classmethod
@@ -508,6 +549,39 @@ class GitHubRepository(
         """
         self._call("PATCH", f"{RepositoryPath.PULL_REQUESTS}/{number}", {"body": body})
 
+    @property
+    def stacks_endpoints(self) -> GitHubRepository:
+        """
+        This client, calling under the API version the stacks endpoints are served
+        under.
+        """
+        return replace(self, api_version=StacksApi.VERSION)
+
+    def stack_containing(self, pull_request: int) -> RegisteredStack | None:
+        query = urllib.parse.urlencode({ListingParameter.PULL_REQUEST: pull_request})
+        found = self.stacks_endpoints._call("GET", f"{RepositoryPath.STACKS}?{query}")
+        return RegisteredStack.from_json(found[0]) if found else None
+
+    def create_stack(self, pull_requests: Sequence[int]) -> RegisteredStack:
+        return RegisteredStack.from_json(
+            self.stacks_endpoints._call(
+                "POST",
+                str(RepositoryPath.STACKS),
+                {StacksApi.PULL_REQUESTS: list(pull_requests)},
+            )
+        )
+
+    def add_to_stack(
+        self, stack_number: int, pull_requests: Sequence[int]
+    ) -> RegisteredStack:
+        return RegisteredStack.from_json(
+            self.stacks_endpoints._call(
+                "POST",
+                f"{RepositoryPath.STACKS}/{stack_number}/{StacksApi.ADD}",
+                {StacksApi.PULL_REQUESTS: list(pull_requests)},
+            )
+        )
+
     def _call(
         self, method: str, path: str, payload: Mapping[str, Any] | None = None
     ) -> Any:
@@ -534,6 +608,11 @@ class GitHubRepository(
         :return: The decoded response.
         :raises GitHubRequestFailed: If the API answers with an error status.
         """
+        version = (
+            {}
+            if self.api_version is None
+            else {"X-GitHub-Api-Version": self.api_version}
+        )
         request = urllib.request.Request(
             f"{GitHubAddress.API}{path}",
             method=method,
@@ -542,6 +621,7 @@ class GitHubRepository(
                 "Authorization": f"Bearer {self.token}",
                 "Accept": "application/vnd.github+json",
                 "Content-Type": "application/json",
+                **version,
             },
         )
         try:

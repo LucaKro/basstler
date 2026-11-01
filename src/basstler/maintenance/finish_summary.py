@@ -21,7 +21,7 @@ from basstler.maintenance.check_overview import CheckOverview
 from basstler.maintenance.constants import MaintenanceText
 from basstler.maintenance.exceptions import MarkdownLinkTargetError
 from basstler.maintenance.report import MaintenanceReport
-from basstler.maintenance.restack_steps import BranchOutcome, RestackOutcome
+from basstler.maintenance.restack import BranchOutcome, RestackOutcome
 from basstler.render_common import AllowedUrlScheme
 from basstler.stack.model import Branch, BranchStatus, Stack
 from basstler.upstream_reviews.vocabulary import RollupState
@@ -407,7 +407,7 @@ class FinishSummary:
     def outcome_detail(self, outcome: BranchOutcome) -> str:
         """
         :param outcome: What became of a branch the pass could not publish.
-        :return: The files, refusals or explanation its owner, or the pass, acts on.
+        :return: The files or explanation its owner, or the pass, acts on.
         """
         if outcome.conflicting_paths:
             paths = outcome.conflicting_paths
@@ -416,8 +416,6 @@ class FinishSummary:
             return f"conflicts in {named}" + (
                 f" and {hidden} more" if hidden > 0 else ""
             )
-        if outcome.refusals:
-            return ", ".join(outcome.refusals)
         if outcome.outcome is RestackOutcome.INTEGRATION_FAILED:
             return f"the pass's own environment, not the branch: {outcome.explanation}"
         return outcome.explanation or ""

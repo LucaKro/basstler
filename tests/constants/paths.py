@@ -91,6 +91,18 @@ class DatasetLocation(PathEnumeration):
     promotion heading, followed by a sentence and a code fence.
     """
 
+    GITHUB_STACK = DIRECTORY / "github-stacks" / "stack.json"
+    """
+    A stack of two pull requests as GitHub's stacks API answers with it.
+    """
+
+    STACKING_PLAN = DIRECTORY / "stacking-plan.yaml"
+    """
+    A plan whose items build on each other in a line, beside the items a stack cannot
+    take: one resting on two unlanded items, one on an item without a branch, and one on
+    an item in another repository.
+    """
+
     PLAN_WITH_LANDED_ITEMS = DIRECTORY / "plan-with-landed-items.yaml"
     """
     A plan with a tracking issue and three items: one landed, one in progress that

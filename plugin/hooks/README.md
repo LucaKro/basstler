@@ -219,6 +219,17 @@ runs. Every session start therefore brings an Action at another release to this 
 only to that branch; the summary's `reviews Action` line says what it did. A fork without the
 branch is left without it.
 
+### `gh stack`
+
+The stacked-PR maintenance pass and the plan item skills keep stacks with GitHub's `gh stack`
+extension, so every session start runs
+[`install-gh-stack.sh`](install-gh-stack.sh) and prints its verdict on the summary's `gh stack`
+line. In a cloud session (`CLAUDE_CODE_REMOTE=true`) it installs what is missing: `gh` at
+`GH_STACK_GH_VERSION` or newer, and the extension built from source with Go, both under
+`$BASSTLER_HOME/tools`, with the `PATH` change written to `CLAUDE_ENV_FILE` for every later
+command. Anywhere else it only reports what to install - `gh extension install github/gh-stack` -
+unless `GH_STACK_INSTALL=1` asks it to install there too. It never fails the session start.
+
 ## Plan dashboards (multi-PR initiatives)
 
 When one PR's progress note isn't enough — a stacked refactor, a multi-wave programme, anything

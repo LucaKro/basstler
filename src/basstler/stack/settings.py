@@ -260,12 +260,6 @@ class Configuration:
     review.
     """
 
-    rebase_label: str
-    """
-    Fork pull request label opting a branch into the rebase strategy instead of the
-    default merge.
-    """
-
     needs_resolution_label: str
     """
     Fork pull request label marking a branch withheld from promotion pending conflict
@@ -338,7 +332,6 @@ class Configuration:
         )
         return cls(
             in_review_label=values[StackSetting.IN_REVIEW_LABEL],
-            rebase_label=values[StackSetting.REBASE_LABEL],
             needs_resolution_label=values[StackSetting.NEEDS_RESOLUTION_LABEL],
             fork_repository=resolution.fork.repository,
             fork_remote=resolution.fork.name,

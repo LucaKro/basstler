@@ -297,3 +297,93 @@ class NotesBranchUnavailableError(BootstrapError):
 
     def suggest_correction(self) -> str:
         return f"Run {PluginLocation.PERSONAL_NOTES_BRANCH_CREATION_SCRIPT.path_under_exported_root} first."
+
+
+# %% placing an item in its stack
+
+
+@dataclass
+class UnstackableItemError(BootstrapError, ABC):
+    """
+    Base for the reasons an item's dependencies do not form one line of branches below
+    it.
+    """
+
+    @classproperty
+    def exit_code(cls) -> PlanItemBootstrapExitCode:
+        """:return: The status this kind of error ends a command with."""
+        return PlanItemBootstrapExitCode.UNSTACKABLE_ITEM
+
+
+@dataclass
+class ForkingDependenciesError(UnstackableItemError):
+    """
+    Raised when an item of the line rests on more than one unlanded item at once.
+    """
+
+    item_identifier: str
+    """
+    The item whose dependencies fork.
+    """
+
+    dependencies: tuple[str, ...]
+    """
+    Its unlanded dependencies.
+    """
+
+    def error_message(self) -> str:
+        return (
+            f"item {self.item_identifier!r} rests on {len(self.dependencies)} unlanded "
+            f"items at once ({', '.join(self.dependencies)}), and a stack is a single "
+            f"line"
+        )
+
+    def suggest_correction(self) -> str:
+        return (
+            "Raise it with the user: land one of them first, or change the plan's "
+            "depends_on so the items build on each other in one line."
+        )
+
+
+@dataclass
+class DependencyInAnotherRepositoryError(UnstackableItemError):
+    """
+    Raised when an item of the line lives in another repository than the item placed.
+    """
+
+    item_identifier: str
+    """
+    The item in the other repository.
+    """
+
+    repository: str
+    """
+    The repository it lives in.
+    """
+
+    def error_message(self) -> str:
+        return (
+            f"dependency {self.item_identifier!r} lives in {self.repository}, and a "
+            f"stack cannot span repositories"
+        )
+
+    def suggest_correction(self) -> str:
+        return "Land it first, then base the item on its repository's trunk."
+
+
+@dataclass
+class UnstartedDependencyError(UnstackableItemError):
+    """
+    Raised when an unlanded item of the line has no branch to build on yet.
+    """
+
+    item_identifier: str
+    """
+    The item without a branch.
+    """
+
+    def error_message(self) -> str:
+        return f"dependency {self.item_identifier!r} has no branch to build on yet"
+
+    def suggest_correction(self) -> str:
+        return "Start that item first, with /plan-item-kickoff."

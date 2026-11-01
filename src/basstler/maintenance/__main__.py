@@ -12,7 +12,7 @@ This module is the command line onto the modules that perform those steps::
 
     python -m basstler.maintenance board --write     # export the fork's open pull requests
     python -m basstler.maintenance fast-forward      # move the fork's base onto the upstream
-    python -m basstler.maintenance restack           # integrate every moved parent, report every conflict
+    python -m basstler.maintenance restack           # rebase every line with gh stack, report every conflict
     python -m basstler.maintenance restack --stacked-on <branch>  # carry one branch into what is stacked on it
     python -m basstler.maintenance promote           # record the upstream link on every ready branch
     python -m basstler.maintenance run-report        # the whole pass, as its finish summary

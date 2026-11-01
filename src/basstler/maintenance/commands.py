@@ -32,10 +32,11 @@ from basstler.maintenance.promotion import (
 from basstler.maintenance.promotion_context import PromotionContextReader
 from basstler.maintenance.check_overview import CheckOverview
 from basstler.maintenance.report import MaintenanceReport
-from basstler.maintenance.restack_procedure import restack
+from basstler.maintenance.restack import restack
 from basstler.maintenance.upstream_pull_request_synchronization import (
     UpstreamPullRequestSynchronization,
 )
+from basstler.stack.cascading_rebase import CascadingRebase, GitHubStackExtension
 from basstler.stack.model import Stack
 from basstler.stack.settings import Configuration
 from basstler.standard_streams import StandardStreamHandler
@@ -85,6 +86,17 @@ class MaintenancePass:
     def upstream(self) -> PullRequestReader:
         """:return: The upstream, as this run's credential can read it."""
         return GitHubRepository.from_environment(self.configuration.upstream_repository)
+
+    def cascade_in(self, working_directory: Path) -> CascadingRebase:
+        """
+        :param working_directory: The checkout the stack's branches are rebased in.
+        :return: GitHub's ``gh stack`` extension, run there against the fork.
+        """
+        return GitHubStackExtension(
+            working_directory,
+            self.configuration.fork_repository,
+            self.configuration.fork_remote,
+        )
 
     def stack(self) -> Stack:
         """:return: The derived stack, read from the exported board."""
@@ -248,7 +260,8 @@ class FastForwardCommand(MaintenanceCommand):
 @dataclass(frozen=True)
 class RestackCommand(MaintenanceCommand):
     """
-    Integrates every moved parent and publishes what merged cleanly.
+    Rebases every line of the stack onto what it is based on and publishes what
+    rebased cleanly.
     """
 
     @classproperty
@@ -256,7 +269,7 @@ class RestackCommand(MaintenanceCommand):
         """
         What it does, as ``--help`` puts it.
         """
-        return "integrate every moved parent and publish the result"
+        return "rebase every line of the stack and publish the result"
 
     def declare_arguments(self, parser: argparse.ArgumentParser) -> None:
         """:param parser: The subparser to declare ``--stacked-on`` on."""
@@ -279,7 +292,11 @@ class RestackCommand(MaintenanceCommand):
         report = MaintenanceReport(
             restacked=tuple(
                 restack(
-                    stack, maintenance.git, maintenance.fork(), arguments.stacked_on
+                    stack,
+                    maintenance.git,
+                    maintenance.fork(),
+                    maintenance.cascade_in,
+                    arguments.stacked_on,
                 )
             )
         )
@@ -428,7 +445,7 @@ class RunReportCommand(MaintenanceCommand):
         report = MaintenanceReport.of_pass(
             stack,
             fast_forward_report,
-            restack(stack, maintenance.git, fork),
+            restack(stack, maintenance.git, fork, maintenance.cascade_in),
             promote(stack, fork, summaries),
             clear_spent_promotion_labels(stack, fork),
             UpstreamPullRequestSynchronization(stack, fork).synchronize(),

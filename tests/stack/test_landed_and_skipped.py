@@ -8,10 +8,8 @@ from __future__ import annotations
 import pytest
 
 from basstler.stack.model import (
-    IntegrationStrategy,
     PullRequest,
     Reparent,
-    RestackPlanEntry,
     SkippedPullRequest,
     SkipReason,
 )
@@ -28,7 +26,7 @@ from .dataset import (
 # %% landed parents that no open pull request describes
 
 
-def test_restack_plan_reparents_child_of_a_landed_parent_with_no_open_pull_request():
+def test_a_child_of_a_landed_parent_with_no_open_pull_request_is_based_on_the_base():
     # the board only carries OPEN pull requests, so a parent whose own PR was closed is
     # absent from it entirely - yet its commits are in the upstream base, so its child
     # must still be reparented onto that base rather than left on the landed branch.
@@ -41,14 +39,10 @@ def test_restack_plan_reparents_child_of_a_landed_parent_with_no_open_pull_reque
             head_repository=StackRepository.FORK.value.full_name,
         )
     ]
-    plan = build(pull_requests, merged={StackBranch.LANDED_ELSEWHERE}).restack_plan()
-    assert plan == [
-        RestackPlanEntry(
-            branch=StackBranch.CHILD,
-            parent=StackBranch.BASE,
-            strategy=IntegrationStrategy.MERGE,
-        )
-    ]
+    lines = build(pull_requests, merged={StackBranch.LANDED_ELSEWHERE}).linear_stacks()
+    assert [
+        (line.trunk, [branch.name for branch in line.layers]) for line in lines
+    ] == [(StackBranch.BASE, [StackBranch.CHILD])]
 
 
 def test_ready_child_blocked_when_its_only_parent_is_an_unlanded_off_board_branch():
@@ -148,7 +142,7 @@ def test_a_head_outside_the_fork_is_neither_restacked_promoted_nor_landed(
         merged={StackBranch.LANDED_ELSEWHERE, StackBranch.CHILD},
     )
 
-    assert stack.restack_plan() == []
+    assert stack.linear_stacks() == []
     assert stack.promotion_order() == []
     assert stack.landed_branches() == []
 

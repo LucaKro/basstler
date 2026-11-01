@@ -78,12 +78,6 @@ class StackExitCode(ExitCode):
     The fork could not be identified from this checkout's remotes.
     """
 
-    MOVE_REFUSED = 5
-    """
-    The proposed move or push must not be made; the reasons are on stderr or in the
-    report.
-    """
-
     GIT_COMMAND_FAILED = 6
     """
     A git command the run depended on failed; nothing further was attempted.
@@ -107,13 +101,18 @@ class StackExitCode(ExitCode):
     BRANCH_NEEDS_ATTENTION = 10
     """
     The pass itself ran, but left at least one branch unpublished for somebody to act on
-    - a conflict, a withheld branch, or a push the fork rejected. Distinct from a move
-    check refusal, which is a fault in the move rather than in the branch.
+    - a conflict, a withheld branch, or a push the fork rejected.
     """
 
     UPSTREAM_UNCONFIGURED = 11
     """
     The project names no upstream repository; stderr says where to name it.
+    """
+
+    LAYER_TAKEN = 12
+    """
+    The pull request to build on already has another stacked on it, and a stack is a
+    single line; stderr names both.
     """
 
     @property

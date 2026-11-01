@@ -10,6 +10,7 @@ import subprocess
 import pytest
 
 import basstler.stack.__main__
+from basstler.environment import GitHubCredentialVariable
 from basstler.exit_codes import StackExitCode
 from basstler.stack.configuration import StackSetting
 from basstler.stack.__main__ import Command, CommandOption
@@ -95,14 +96,14 @@ def test_a_label_write_prints_the_complete_set_one_label_per_line(
         CommandOption.CURRENT,
         StackLabel.BUG,
         CommandOption.ADD,
-        StackLabel.REBASE,
+        StackLabel.NEEDS_RESOLUTION,
     )
 
     assert result.returncode == StackExitCode.SUCCESS
     assert result.stdout.splitlines() == [
         StackLabel.IN_REVIEW,
         StackLabel.BUG,
-        StackLabel.REBASE,
+        StackLabel.NEEDS_RESOLUTION,
     ]
 
 
@@ -113,13 +114,13 @@ def test_a_contradictory_label_write_is_refused_rather_than_guessed_at(
         offline_checkout,
         Command.LABELS,
         CommandOption.ADD,
-        StackLabel.REBASE,
+        StackLabel.NEEDS_RESOLUTION,
         CommandOption.REMOVE,
-        StackLabel.REBASE,
+        StackLabel.NEEDS_RESOLUTION,
     )
 
     assert result.returncode == StackExitCode.USAGE
-    assert StackLabel.REBASE in result.stderr
+    assert StackLabel.NEEDS_RESOLUTION in result.stderr
 
 
 def test_a_checkout_whose_fork_cannot_be_identified_says_so_by_status(
@@ -287,3 +288,31 @@ def test_a_branch_withheld_for_its_checks_is_named_with_their_verdict(
 
     printed = capsys.readouterr().out
     assert f"{StackBranch.FEATURE} ({RollupState.FAILURE})" in printed
+
+
+# %% registering a pull request on its GitHub stack
+
+
+def test_registering_without_a_credential_says_so_by_status(
+    offline_checkout: ScratchRepository,
+):
+    """
+    Registering reads and writes the repository's stacks, so a run with no token has to
+    say that rather than fail some other way.
+    """
+    result = PythonModuleRunner(
+        project_root=offline_checkout.project_root,
+        module_name=basstler.stack.__main__.__name__,
+        removed_variable_prefixes=tuple(GitHubCredentialVariable),
+    ).run(
+        Command.REGISTER,
+        CommandOption.REPOSITORY,
+        StackRepository.FORK.value.full_name,
+        CommandOption.PULL_REQUEST,
+        "23",
+        CommandOption.BELOW,
+        "21",
+        "22",
+    )
+
+    assert result.returncode == StackExitCode.CREDENTIAL_UNAVAILABLE

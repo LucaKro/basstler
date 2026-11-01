@@ -1,6 +1,6 @@
 ---
 name: stacked-pr-maintenance
-description: Run one maintenance pass over a fork's stacked pull requests: reparent, restack, and promote approved branches upstream. Invoke as "/stacked-pr-maintenance [fork=<owner/repo>] [upstream=<owner/repo>]". Use when asked to restack or promote the stack, and as the first step of plan-item-kickoff and plan-item-resolve.
+description: Run one maintenance pass over a fork's stacked pull requests: reparent, restack with GitHub's gh stack, and promote approved branches upstream. Invoke as "/stacked-pr-maintenance [fork=<owner/repo>] [upstream=<owner/repo>]". Use when asked to restack or promote the stack, and as the first step of plan-item-kickoff and plan-item-resolve.
 allowed-tools: Bash, Read, Write, AskUserQuestion, mcp__github__update_pull_request
 ---
 
@@ -13,6 +13,10 @@ upstream summaries. Why each rule holds is in `docs/stack/maintenance-pass.md`; 
 Run every command through `"${BASSTLER_PLUGIN_ROOT}/hooks/basstler.sh"`. It waits for or finishes
 the package install by itself. If it exits 1 with one line on stderr, relay that line and stop;
 never read the hook scripts to debug it.
+
+The restack rebases each stack with `gh stack` and force-pushes it with a lease. The session-start
+summary's `gh stack:` line says whether it runs here; if it says `unavailable`, relay that line and
+stop before step 3.
 
 Every output is small (a few KB at most) and final. Read each once. Never re-run a command to see
 its output again, never pipe it through `grep`, `sed`, `jq` or `head`, and never re-derive what it
@@ -59,7 +63,7 @@ and name and `access: "push"`, the only level that lets the session's API calls 
 The pass only reads the upstream and never pushes to it; skip the clone the result suggests, and
 re-run. If the attach is refused or blocked, stop and tell the user the pass needs the upstream's
 open pull requests and approving the attach unblocks it. Never run the rest of the pass without
-them: which branches are under upstream review decides how each one is restacked.
+them: which branches are under upstream review decides which are promoted and labelled.
 
 ### Reparents (only if any)
 
@@ -107,7 +111,6 @@ The first line is the status:
 |---|---|
 | `success`, `branch-needs-attention` | relay the summary |
 | `not-fast-forward` | relay it; the fork's base is behind the upstream |
-| `move-refused` | relay it and stop |
 
 ## Finish
 
@@ -119,11 +122,5 @@ you stopped on.
 
 `run-report` is the whole pass and safe to re-run. The single steps exist for a person, not for a
 pass: `board --write`, then `fast-forward`, `restack`, `promote`, or `checks` for the CI overview.
-Before any push you make by hand:
-
-```bash
-"${BASSTLER_PLUGIN_ROOT}/hooks/basstler.sh" stack check-move \
-  --action push --source <branch> --destination <branch> --destination-remote <fork-remote>
-```
-
-Exit 5 means do not push; the reasons are on stderr.
+Push a stack's branches by hand only with `gh stack push --remote <fork-remote>`, which pushes every
+layer with a lease of its own.

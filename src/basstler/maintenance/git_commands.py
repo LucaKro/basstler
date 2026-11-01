@@ -1,9 +1,8 @@
 """
-Running git for a pass, and deciding what a pass is allowed to publish.
+Running git for a pass.
 
 Every command a pass runs goes through :class:`GitCommandRunner`, and every push it
-proposes is built as a :class:`ProposedPush` - so whether published history may be
-rewritten is decided in one place rather than at each call site.
+makes is built as a :class:`ProposedPush`, which never overwrites what is published.
 """
 
 from __future__ import annotations
@@ -15,13 +14,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from basstler.class_property import classproperty
-from basstler.exceptions import UnresolvableReferenceError
 from basstler.exit_codes import CommandFailure, StackExitCode
 from basstler.locations import RepositoryStateLocation
-from basstler.maintenance.constants import CommitTrailer
 from basstler.maintenance.exceptions import ExternalCallFailed
-from basstler.stack.model import IntegrationStrategy
-from basstler.stack.settings import Configuration
 
 # %% running git
 
@@ -97,10 +92,7 @@ class GitCommandResult:
 @dataclass(frozen=True)
 class ProposedPush:
     """
-    One publication, and whether it is authorised to overwrite what is published.
-
-    Every push the executor makes is built here, so whether history may be rewritten is
-    decided once rather than at each call.
+    One publication, made only where it moves the remote branch forward.
     """
 
     remote: str
@@ -112,39 +104,6 @@ class ProposedPush:
     """
     What to publish, as ``<source>:<destination>``.
     """
-
-    with_lease: bool = False
-    """
-    Whether published history may be overwritten, and then only if the remote is where
-    this checkout last saw it.
-    """
-
-    @classmethod
-    def publishing(
-        cls,
-        configuration: Configuration,
-        branch: str,
-        strategy: IntegrationStrategy,
-        replaces_superseded_merges: bool = False,
-    ) -> ProposedPush:
-        """
-        Build the push that publishes a restacked branch.
-
-        :param configuration: The resolved configuration.
-        :param branch: The branch to publish.
-        :param strategy: How its parent was integrated, which authorises a rewrite when
-            it is a rebase - and which ``Stack.build`` sets to rebase only from the label.
-        :param replaces_superseded_merges: Whether the integration replaced merges that
-            only brought in an earlier state of the parent, the one rewrite a merge is
-            authorised to make.
-        :return: The push.
-        """
-        return cls(
-            remote=configuration.fork_remote,
-            refspec=f"{branch}:{branch}",
-            with_lease=strategy is IntegrationStrategy.REBASE
-            or replaces_superseded_merges,
-        )
 
 
 @dataclass(frozen=True)
@@ -252,114 +211,23 @@ class GitCommandRunner:
         :return: The commit it names."""
         return self.run("rev-parse", reference)
 
-    def parents_of(self, commit: str) -> tuple[str, ...]:
-        """:param commit: Any reference git can resolve to a commit.
-        :return: The commit's parents, its first parent first."""
-        return tuple(
-            self.run("rev-list", "--parents", "--max-count=1", commit).split()[1:]
-        )
-
-    def tree_of(self, commit: str) -> str:
-        """:param commit: Any reference git can resolve to a commit.
-        :return: The tree the commit records."""
-        return self.run("rev-parse", f"{commit}^{{tree}}")
-
-    def automatic_merge_tree(self, first: str, second: str) -> str | None:
-        """
-        Merge two commits without touching any branch or the working tree.
-
-        :param first: One side of the merge.
-        :param second: The other side.
-        :return: The tree merging them produces, or ``None`` when it conflicts.
-        """
-        merge = self.attempt("merge-tree", "--write-tree", first, second)
-        return merge.output.splitlines()[0] if merge.succeeded else None
-
-    def adds_only_merges(self, candidate: str, *references: str) -> bool:
-        """:param candidate: The reference whose history is examined.
-        :param references: The references it is compared against.
-        :return: Whether every commit *candidate* holds beyond all of *references* is a
-            merge.
-        :raises UnresolvableReferenceError: If any reference names no commit here.
-        """
-        for compared in (*references, candidate):
-            if not self.attempt(
-                "rev-parse", "--verify", "--quiet", f"{compared}^{{commit}}"
-            ).succeeded:
-                raise UnresolvableReferenceError(reference=compared)
-        beyond = self.run(
-            "rev-list",
-            "--no-merges",
-            "--max-count=1",
-            candidate,
-            *(f"^{reference}" for reference in references),
-        )
-        return not beyond
-
-    def checkout(self, branch: str, start_point: str) -> None:
-        """
-        Put a branch at a starting point and check it out.
-
-        :param branch: The branch to move and check out.
-        :param start_point: What to point it at.
-        """
-        self.run("checkout", "--quiet", "-B", branch, start_point)
-
     def checked_out_branch(self) -> str:
         """:return: The branch whose content a push would move."""
         return self.run("branch", "--show-current")
 
-    def merge(self, reference: str, message: str) -> GitCommandResult:
-        """:param reference: The reference to merge in.
-        :param message: The merge commit's message.
-        :return: The finished merge, whose failure is a conflict only when it left
-            unmerged paths behind."""
-        return self.attempt("merge", "--no-edit", "--message", message, reference)
-
-    def trailer_value(self, commit: str, trailer: CommitTrailer) -> str:
-        """:param commit: Any reference git can resolve to a commit.
-        :param trailer: The trailer key read.
-        :return: The value the commit's message gives that trailer, empty when it has
-            none."""
-        return self.run(
-            "log",
-            "--max-count=1",
-            f"--format=%(trailers:key={trailer},valueonly)",
-            commit,
-        )
-
-    def rebase(self, reference: str) -> GitCommandResult:
-        """:param reference: The reference to rebase onto.
-        :return: The finished rebase, whose failure is a conflict only when it left
-            unmerged paths behind."""
-        return self.attempt("rebase", reference)
-
-    def abandon(self, strategy: IntegrationStrategy) -> None:
-        """
-        Undo whichever integration just failed.
-
-        :param strategy: The integration that was attempted.
-        """
-        self.attempt(
-            "rebase" if strategy is IntegrationStrategy.REBASE else "merge", "--abort"
-        )
-
     def unmerged_paths(self) -> tuple[str, ...]:
-        """:return: The paths the integration that just failed left conflicted."""
+        """:return: The paths the rebase that just stopped left conflicted."""
         unmerged = self.attempt("diff", "--name-only", "--diff-filter=U")
         return tuple(path for path in unmerged.output.splitlines() if path)
 
     def push(self, proposed: ProposedPush) -> GitCommandResult:
         """
-        Publish a refspec, forcing only where the push itself says it is authorised.
+        Publish a refspec, never forcing it.
 
-        :param proposed: What to publish, and whether a rewrite is authorised.
+        :param proposed: What to publish.
         :return: The finished push, whose failure the caller reports rather than forces.
         """
-        lease = ["--force-with-lease"] if proposed.with_lease else []
-        return self.attempt(
-            "push", "--quiet", *lease, proposed.remote, proposed.refspec
-        )
+        return self.attempt("push", "--quiet", proposed.remote, proposed.refspec)
 
     def contains(self, candidate: str, descendant: str) -> bool:
         """:param candidate: The reference that may be contained.
@@ -368,34 +236,3 @@ class GitCommandRunner:
         return self.attempt(
             "merge-base", "--is-ancestor", candidate, descendant
         ).succeeded
-
-
-# %% asking git what contains what
-
-
-@dataclass(frozen=True)
-class BranchAncestry:
-    """
-    Answers containment questions about the fork's branches.
-
-    :class:`CommitMoveChecks` asks its false-merge question through this, so the
-    question is asked of git rather than of anything this module remembers.
-    """
-
-    configuration: Configuration
-    """
-    The resolved configuration naming the fork remote.
-    """
-
-    git: GitCommandRunner
-    """
-    The runner to ask git through.
-    """
-
-    def is_ancestor(self, candidate: str, descendant: str) -> bool:
-        """:param candidate: A fork branch that may be contained.
-        :param descendant: A local branch that may contain it.
-        :return: Whether the fork's copy of *candidate* is contained in *descendant*."""
-        return self.git.contains(
-            self.configuration.reference_on_fork(candidate), descendant
-        )

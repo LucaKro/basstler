@@ -1,20 +1,11 @@
 """
-Tests for what the stack helper asks to have written: label writes, the check a commit
-move has to pass, and promotion links.
+Tests for what the stack helper asks to have written: label writes and promotion links.
 """
 
 from __future__ import annotations
 
-from collections.abc import Container
-
 import pytest
 
-from basstler.stack.commit_move import (
-    CommitMoveAction,
-    CommitMoveChecks,
-    ProposedCommitMove,
-    RefusalReason,
-)
 from basstler.stack.exceptions import (
     ContradictoryLabelWriteError,
     PromotionLinkTooLongError,
@@ -22,14 +13,13 @@ from basstler.stack.exceptions import (
 from basstler.stack.label_write import LabelWrite
 from basstler.stack.promotion_link import PromotionLink, PromotionLinkParameter
 
-from ..constants.stack import RemoteName, StackBranch, StackLabel
+from ..constants.stack import StackBranch, StackLabel
 
 from .dataset import (
     StackRepository,
     StackSampleText,
     make_configuration,
     prefilled,
-    a_deep_stack_beside_an_independent_branch,
 )
 
 
@@ -79,7 +69,7 @@ def test_removing_a_label_that_is_not_there_leaves_the_set_unchanged():
     configuration = make_configuration()
 
     write = LabelWrite.replacing(
-        [configuration.in_review_label], removed=[configuration.rebase_label]
+        [configuration.in_review_label], removed=[configuration.needs_resolution_label]
     )
 
     assert write.labels == (configuration.in_review_label,)
@@ -95,134 +85,9 @@ def test_asking_to_add_and_remove_one_label_at_once_is_refused():
     with pytest.raises(ContradictoryLabelWriteError):
         LabelWrite.replacing(
             [configuration.in_review_label],
-            added=[configuration.rebase_label],
-            removed=[configuration.rebase_label],
+            added=[configuration.needs_resolution_label],
+            removed=[configuration.needs_resolution_label],
         )
-
-
-# %% move check
-
-
-def a_proposed_push(
-    source: str = StackBranch.ENGINE,
-    destination: str = StackBranch.ENGINE,
-    destination_remote: str = RemoteName.ORIGIN,
-) -> ProposedCommitMove:
-    """
-    A proposed push, defaulting to the one shape that is always allowed.
-
-    :param source: The branch whose commits would move.
-    :param destination: The branch they would land on.
-    :param destination_remote: The remote holding the destination.
-    :return: The proposed move.
-    """
-    return ProposedCommitMove(
-        action=CommitMoveAction.PUSH,
-        source=source,
-        destination=destination,
-        destination_remote=destination_remote,
-    )
-
-
-def checks_over_that_stack(
-    checked_out_branch: str = StackBranch.ENGINE,
-    ancestors: Container[str] = frozenset(),
-) -> CommitMoveChecks:
-    """
-    A move check over :func:`a_deep_stack_beside_an_independent_branch`.
-
-    :param checked_out_branch: What ``git branch --show-current`` would report.
-    :param ancestors: Branches already contained in the move's source.
-    :return: The move check to ask for refusals.
-    """
-    return CommitMoveChecks(
-        stack=a_deep_stack_beside_an_independent_branch(),
-        checked_out_branch=checked_out_branch,
-        is_ancestor=lambda candidate, _descendant: candidate in ancestors,
-    )
-
-
-def test_pushing_the_checked_out_branch_onto_itself_is_allowed():
-    assert checks_over_that_stack().refusals(a_proposed_push()) == []
-
-
-def test_pushing_while_another_branch_is_checked_out_is_refused():
-    """
-    The checked-out branch is the one whose content actually moves, so a mismatch moves
-    something other than what was intended.
-    """
-    refusals = checks_over_that_stack(checked_out_branch=StackBranch.PARSER).refusals(
-        a_proposed_push()
-    )
-
-    assert [refusal.reason for refusal in refusals] == [RefusalReason.NOT_CHECKED_OUT]
-    assert StackBranch.PARSER in refusals[0].explanation
-
-
-def test_a_push_naming_a_different_branch_on_each_side_is_refused():
-    refusals = checks_over_that_stack().refusals(
-        a_proposed_push(destination=StackBranch.ENGINE_UI)
-    )
-
-    assert [refusal.reason for refusal in refusals] == [
-        RefusalReason.MISMATCHED_BRANCH_NAMES
-    ]
-
-
-def test_a_destination_on_the_upstream_remote_is_refused():
-    """
-    Every push in this workflow goes to the fork; the upstream is written only by
-    opening a pull request against it.
-    """
-    refusals = checks_over_that_stack().refusals(
-        a_proposed_push(destination_remote=RemoteName.UPSTREAM)
-    )
-
-    assert [refusal.reason for refusal in refusals] == [RefusalReason.NOT_THE_FORK]
-    assert RemoteName.UPSTREAM in refusals[0].explanation
-
-
-def test_a_push_that_would_make_a_child_an_ancestor_of_its_parent_is_refused():
-    """
-    GitHub reads a pull request whose head is contained in its base as merged, so this
-    push would falsely close the child.
-    """
-    refusals = checks_over_that_stack(ancestors={StackBranch.ENGINE_UI}).refusals(
-        a_proposed_push()
-    )
-
-    assert [refusal.reason for refusal in refusals] == [RefusalReason.FALSE_MERGE]
-    assert StackBranch.ENGINE_UI in refusals[0].explanation
-
-
-def test_an_unrelated_branch_contained_in_the_source_is_not_a_false_merge():
-    """
-    Only a child of the destination can be falsely merged by pushing to it.
-    """
-    assert (
-        checks_over_that_stack(ancestors={StackBranch.PARSER}).refusals(
-            a_proposed_push()
-        )
-        == []
-    )
-
-
-def test_every_reason_to_refuse_is_reported_rather_than_only_the_first():
-    """
-    Fixing one problem and re-running to discover the next is how a half-applied move
-    gets made.
-    """
-    refusals = checks_over_that_stack(checked_out_branch=StackBranch.PARSER).refusals(
-        a_proposed_push(
-            destination=StackBranch.ENGINE_UI, destination_remote=RemoteName.UPSTREAM
-        )
-    )
-
-    assert [refusal.reason for refusal in refusals] == [
-        RefusalReason.NOT_CHECKED_OUT,
-        RefusalReason.MISMATCHED_BRANCH_NAMES,
-        RefusalReason.NOT_THE_FORK,
-    ]
 
 
 # %% promotion links

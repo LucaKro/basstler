@@ -20,13 +20,13 @@ to find out.
 "${BASSTLER_PYTHON}" -m basstler.maintenance restack --stacked-on <this item's branch>
 ```
 
-The second command plans only the branches stacked on the named one — directly
-or through the branches between them — and puts each through the same steps a
-whole-board pass uses, parent before child. It prints one line per branch:
-`pushed` (it took the fix and was published), `up-to-date` (it already had it),
-`conflict`, plus the paths that collided, or `blocked-by-ancestor` (a branch
-below it did not take the fix, so it was not attempted; resolve that branch and
-run the command again).
+The second command rebases only the branches stacked on the named one —
+directly or through the branches between them — with `gh stack`, the way a
+whole-board pass does, parent before child, and pushes each with a lease. It
+prints one line per branch: `pushed` (it was rebased onto the fix and
+published), `up-to-date` (it already had it), `conflict`, plus the paths that
+collided, or `blocked-by-ancestor` (a branch below it did not take the fix, so
+it was not attempted; resolve that branch and run the command again).
 
 Unlike a whole-board pass, a conflict here writes nothing to the descendant's
 pull request: no label, no comment. The judgement is yours, because the fix
@@ -37,7 +37,7 @@ being carried is the one this session just made.
 This is a **parent to descendant** collision, and it has a correct answer: the
 parent's side is the fix, and it belongs in the descendant. Resolve it in the
 descendant's favour only where the descendant's own work genuinely supersedes
-what the fix changed — never by dropping the fix to make the merge easy, and
+what the fix changed — never by dropping the fix to make the rebase easy, and
 never by weakening it on the parent.
 
 That is not the judgement `/integration-conflict-triage` makes. It weighs
@@ -45,8 +45,11 @@ That is not the judgement `/integration-conflict-triage` makes. It weighs
 and the fix belongs in whichever feature branch caused it. The vocabulary
 carries over; the verdicts do not.
 
-Resolve it on the descendant's branch, push, and re-run the command so what is
-stacked above it takes the resolved result.
+Resolve it with `gh stack rebase --remote <fork-remote> <the descendant>`:
+settle the conflict on the branch it stops on, finish with
+`gh stack rebase --continue`, publish with `gh stack push --remote
+<fork-remote>`, and re-run the command so what is stacked above it takes the
+resolved result.
 
 ## When to hand it back instead
 

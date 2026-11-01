@@ -10,6 +10,7 @@ import pytest
 from basstler.locations import PluginLocation
 from basstler.plan.model import PlanDocument
 
+from ...constants.paths import DatasetLocation
 from ...scratch_repository import ScratchRepository
 from .bootstrap_scenario import (
     INDENTLESS_PLAN_MANIFEST,
@@ -68,3 +69,15 @@ def indentless_plan_repository(
         ``items:``.
     """
     return repository_publishing(scratch_repository, INDENTLESS_PLAN_MANIFEST)
+
+
+@pytest.fixture
+def stacking_plan_repository(
+    scratch_repository: ScratchRepository,
+) -> ScratchRepository:
+    """
+    :return: A scratch repository whose published plan's items build on each other.
+    """
+    return repository_publishing(
+        scratch_repository, DatasetLocation.STACKING_PLAN.read_text()
+    )

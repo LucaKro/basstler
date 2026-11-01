@@ -299,7 +299,6 @@ def test_every_setting_is_printed_under_its_own_field_name(capsys):
 
     assert printed == {
         StackSetting.IN_REVIEW_LABEL: StackLabel.IN_REVIEW,
-        StackSetting.REBASE_LABEL: StackLabel.REBASE,
         StackSetting.NEEDS_RESOLUTION_LABEL: StackLabel.NEEDS_RESOLUTION,
         StackSetting.FORK_REPOSITORY: StackRepository.FORK.value.full_name,
         StackSetting.FORK_REMOTE: RemoteName.ORIGIN,

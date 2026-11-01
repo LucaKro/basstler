@@ -1,8 +1,8 @@
 # basstler
 
 Workflow tooling for Claude Code sessions: personal notes that follow you across sessions,
-per-pull-request progress, multi-PR plans with live dashboards, stacked-pull-request
-maintenance and an upstream review reader.
+per-pull-request progress, multi-PR plans with live dashboards, maintenance of stacked pull
+requests kept as GitHub's native stacks (`gh stack`), and an upstream review reader.
 
 The name is the German word for someone who builds things themselves, and shares its
 first letters with the surname of the person who wrote it, Bassiouny.

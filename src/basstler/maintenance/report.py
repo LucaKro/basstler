@@ -12,7 +12,7 @@ from enum import StrEnum
 from basstler.exit_codes import StackExitCode
 from basstler.maintenance.fast_forward import FastForwardOutcome, FastForwardReport
 from basstler.maintenance.promotion import Promotion
-from basstler.maintenance.restack_steps import BranchOutcome, RestackOutcome
+from basstler.maintenance.restack import BranchOutcome, RestackOutcome
 from basstler.maintenance.upstream_pull_request_synchronization import (
     UpstreamPullRequestSynchronizationChange,
 )
@@ -185,10 +185,7 @@ class MaintenanceReport:
         """
         if self.fast_forward_was_refused:
             return StackExitCode.NOT_FAST_FORWARD
-        unpublished = self.branches_left_unpublished
-        if any(outcome.outcome is RestackOutcome.REFUSED for outcome in unpublished):
-            return StackExitCode.MOVE_REFUSED
-        if unpublished:
+        if self.branches_left_unpublished:
             return StackExitCode.BRANCH_NEEDS_ATTENTION
         return StackExitCode.SUCCESS
 
@@ -220,7 +217,6 @@ class MaintenanceReport:
         for outcome in self.restacked:
             detail = (
                 ",".join(outcome.conflicting_paths)
-                or ",".join(outcome.refusals)
                 or outcome.pushed_commit
                 or outcome.explanation
                 or ""

@@ -1,7 +1,6 @@
 # A project's committed stack.toml naming every default setting, which the personal-notes
 # override is layered on top of.
 in_review_label = "in-review"
-rebase_label = "rebase"
 needs_resolution_label = "needs-resolution"
 fork_remote = "origin"
 upstream_repository = "an-upstream-owner/a-project"

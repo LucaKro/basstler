@@ -19,7 +19,6 @@ from basstler.maintenance.commands import (
 )
 from basstler.pull_request_state import PullRequestState
 from basstler.maintenance.github import ForkPullRequests, PullRequestListState
-from basstler.maintenance.restack_steps import RestackStep
 
 from ..constants.stack import RemoteName
 
@@ -103,20 +102,6 @@ def test_a_fork_client_that_cannot_make_one_of_the_writes_cannot_be_built():
 
     with pytest.raises(TypeError, match="add_comment"):
         ForkThatCannotComment()
-
-
-def test_a_restack_step_that_does_nothing_cannot_be_built():
-    """
-    A step is only ever reached through restack_steps, where one that concludes nothing
-    would silently pass every branch along to the next step.
-    """
-
-    @dataclass(frozen=True)
-    class StepWithoutAnAttempt(RestackStep):
-        pass
-
-    with pytest.raises(TypeError, match="attempt"):
-        StepWithoutAnAttempt()
 
 
 def test_every_command_is_reachable_from_the_command_line(fork_checkout: ForkCheckout):

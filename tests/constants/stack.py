@@ -117,6 +117,11 @@ class StackBranch(StrEnum):
     Stacked on the child, so it reaches the parent only through it.
     """
 
+    SIBLING = "a-sibling"
+    """
+    A second branch cut from the parent beside the child, so the parent carries two.
+    """
+
     OFF_THE_CHAIN = "off-the-chain"
     """
     Cut from the base beside the chain, so nothing stacks it on the parent.
@@ -153,11 +158,6 @@ class StackLabel(StrEnum):
     IN_REVIEW = "in-review"
     """
     Carried by a branch that has reached the upstream review queue.
-    """
-
-    REBASE = "rebase"
-    """
-    Authorises rewriting a branch's published history rather than merging into it.
     """
 
     NEEDS_RESOLUTION = "needs-resolution"
