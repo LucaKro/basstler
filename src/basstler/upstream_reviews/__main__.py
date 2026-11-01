@@ -18,7 +18,11 @@ script works unchanged in any contributor's fork.
 
 from __future__ import annotations
 
-from basstler_domain_model.github.exceptions import PullRequestReadError
+from basstler_domain_model.github.exceptions import (
+    GitHubCredentialUnavailableError,
+    GitHubRequestFailed,
+    PullRequestReadError,
+)
 
 import argparse
 import sys
@@ -36,7 +40,7 @@ from basstler.stack.configuration import (
 )
 from basstler.standard_streams import StandardStreamHandler
 from basstler_domain_model.github.clients import (
-    GitHubCommandLineClient,
+    GitHubApi,
 )
 from basstler_domain_model.github.readers import (
     ReadSource,
@@ -132,7 +136,12 @@ def main(argv: list[str] | None = None) -> int:
     arguments = _parse_arguments(argv)
     try:
         report = _build_report(arguments)
-    except (PullRequestReadError, MissingUpstreamRepositoryError) as failure:
+    except (
+        PullRequestReadError,
+        GitHubRequestFailed,
+        GitHubCredentialUnavailableError,
+        MissingUpstreamRepositoryError,
+    ) as failure:
         logger.error(failure)
         return 1
     logger.info(report)
@@ -149,7 +158,7 @@ def _build_report(arguments: argparse.Namespace) -> str:
     :param arguments: The parsed command line.
     :return: The rendered markdown.
     """
-    client = GitHubCommandLineClient()
+    client = GitHubApi.from_environment()
     upstream = resolve_upstream_repository(
         CommittedStackConfiguration(), override=arguments.upstream
     )

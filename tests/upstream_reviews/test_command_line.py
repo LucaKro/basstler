@@ -1,21 +1,25 @@
 """
 Tests for basstler.upstream_reviews's data parsing, check reading, failure-log excerpting,
-thread pagination, pull request resolution, report rendering, and the gh-backed client.
+thread pagination, pull request resolution, report rendering, and reading through the API.
 """
 
 import inspect
 import json
-import os
-import shutil
-import stat
+from collections.abc import Iterator
 from enum import StrEnum
-from pathlib import Path
+from http import HTTPStatus
 
 import pytest
 
+from basstler_domain_model.environment import (
+    ClaudeCodeVariable,
+    GitHubActionsVariable,
+    GitHubCredentialVariable,
+)
 from basstler_domain_model.exceptions import (
     DataclassException,
 )
+from basstler_domain_model.github.replayed_api import RecordedAnswer, ReplayedApi
 from basstler.locations import ProjectLocation
 from basstler_domain_model.repository import (
     Repository,
@@ -25,15 +29,10 @@ from basstler.upstream_reviews.__main__ import (
     main,
     resolve_upstream_repository,
 )
-from basstler_domain_model.github.clients import (
-    GitHubCommandLineClient,
-)
 from basstler.upstream_reviews.exceptions import (
     UpstreamReadError,
 )
 from basstler_domain_model.github.exceptions import (
-    GitHubCommandFailed,
-    GraphQLErrorsReturned,
     UpstreamPullRequestNotFound,
 )
 from basstler.upstream_reviews.failure_logs import (
@@ -70,9 +69,7 @@ from basstler_domain_model.github.vocabulary import (
     ThreadMarker,
 )
 
-from ..constants.paths import DatasetLocation
 from .replay import (
-    RecordedCall,
     RecordedJobLog,
     RecordedResponse,
     ReplayingClient,
@@ -741,120 +738,28 @@ def test_a_pull_request_with_nothing_outstanding_says_so(current_state):
     assert ReportText.NOTHING_TO_ACT_ON in rendered
 
 
-# %% gh client
+# %% reading through the API
 
 
 @pytest.fixture
-def stubbed_gh(tmp_path, monkeypatch) -> Path:
+def replayed_github(monkeypatch) -> Iterator[ReplayedApi]:
     """
-    Put the ``gh`` stub first on ``PATH``.
-
-    :param tmp_path: pytest's per-test temporary directory.
-    :param monkeypatch: The fixture used to prepend the stub directory.
-    :return: The directory the stub was installed into.
+    :return: A local stand-in for GitHub's API, which the command line reaches through
+        the API root and token the environment names.
     """
-    stub_directory = tmp_path / "bin"
-    stub_directory.mkdir()
-    installed = stub_directory / "gh"
-    shutil.copy(DatasetLocation.STUBS / "gh.sh", installed)
-    installed.chmod(installed.stat().st_mode | stat.S_IEXEC)
-    monkeypatch.setenv("PATH", f"{stub_directory}{os.pathsep}{os.environ['PATH']}")
-    return stub_directory
-
-
-def test_the_data_is_unwrapped(stubbed_gh, monkeypatch):
-    data = {PullRequestJSONKey.REPOSITORY: None}
-    monkeypatch.setenv(
-        StubEnvironmentVariable.GRAPHQL_JSON,
-        json.dumps({PullRequestJSONKey.DATA: data}),
-    )
-
-    assert GitHubCommandLineClient().execute("query {}", {}) == data
-
-
-def test_the_query_and_variables_are_sent_as_the_request_body(
-    stubbed_gh, monkeypatch, tmp_path
-):
-    call_log = tmp_path / "calls.txt"
-    monkeypatch.setenv(StubEnvironmentVariable.CALL_LOG, str(call_log))
-    monkeypatch.setenv(
-        StubEnvironmentVariable.GRAPHQL_JSON, json.dumps({PullRequestJSONKey.DATA: {}})
-    )
-    sent = RecordedCall("query Example {}", {QueryVariable.NUMBER: 513})
-
-    GitHubCommandLineClient().execute(sent.query, sent.variables)
-
-    assert json.loads(call_log.read_text()) == {
-        PullRequestJSONKey.QUERY: sent.query,
-        PullRequestJSONKey.VARIABLES: sent.variables,
-    }
-
-
-def test_a_failing_gh_invocation_is_raised(stubbed_gh, monkeypatch):
-    monkeypatch.setenv(StubEnvironmentVariable.EXIT_CODE, "1")
-
-    with pytest.raises(GitHubCommandFailed) as raised:
-        GitHubCommandLineClient().execute("query {}", {})
-
-    assert raised.value.exit_code == 1
-
-
-def test_graphql_errors_are_raised_rather_than_returned(stubbed_gh, monkeypatch):
-    monkeypatch.setenv(
-        StubEnvironmentVariable.GRAPHQL_JSON,
-        json.dumps(
-            {
-                PullRequestJSONKey.ERRORS: [
-                    {PullRequestJSONKey.MESSAGE: GRAPHQL_ERROR_MESSAGE}
-                ]
-            }
-        ),
-    )
-
-    with pytest.raises(GraphQLErrorsReturned) as raised:
-        GitHubCommandLineClient().execute("query {}", {})
-
-    assert raised.value.messages == [GRAPHQL_ERROR_MESSAGE]
-
-
-def test_a_job_log_is_asked_for_by_the_job_s_own_endpoint(
-    stubbed_gh, monkeypatch, tmp_path
-):
-    call_log = tmp_path / "calls.txt"
-    monkeypatch.setenv(StubEnvironmentVariable.CALL_LOG, str(call_log))
-    monkeypatch.setenv(StubEnvironmentVariable.JOB_LOG, "")
-
-    GitHubCommandLineClient().read_job_log(UPSTREAM, RECORDED_JOB_IDENTIFIER)
-
-    assert call_log.read_text().strip() == UPSTREAM.job_log_path(
-        RECORDED_JOB_IDENTIFIER
-    )
-
-
-def test_a_job_log_comes_back_as_the_runner_recorded_it(stubbed_gh, monkeypatch):
-    recorded = RecordedJobLog.FAILED_JOB_WITHOUT_SUMMARY.load()
-    monkeypatch.setenv(StubEnvironmentVariable.JOB_LOG, recorded)
-
-    read = GitHubCommandLineClient().read_job_log(UPSTREAM, RECORDED_JOB_IDENTIFIER)
-
-    assert read == recorded
-
-
-def test_a_failing_job_log_read_is_raised(stubbed_gh, monkeypatch):
-    monkeypatch.setenv(StubEnvironmentVariable.EXIT_CODE, "1")
-
-    with pytest.raises(GitHubCommandFailed) as raised:
-        GitHubCommandLineClient().read_job_log(UPSTREAM, RECORDED_JOB_IDENTIFIER)
-
-    assert raised.value.exit_code == 1
+    with ReplayedApi() as api:
+        monkeypatch.setenv(GitHubActionsVariable.API_URL, api.url)
+        monkeypatch.setenv(GitHubCredentialVariable.GH_TOKEN, "a-token")
+        yield api
 
 
 def test_a_branch_without_an_upstream_pull_request_exits_without_a_traceback(
-    stubbed_gh, monkeypatch, capsys
+    replayed_github, monkeypatch, capsys
 ):
     monkeypatch.delenv("GITHUB_STEP_SUMMARY", raising=False)
-    monkeypatch.setenv(
-        StubEnvironmentVariable.GRAPHQL_JSON,
+    monkeypatch.delenv(ClaudeCodeVariable.REMOTE, raising=False)
+    replayed_github.answers[("POST", "/graphql")] = RecordedAnswer(
+        HTTPStatus.OK,
         json.dumps(
             {PullRequestJSONKey.DATA: RecordedResponse.BRANCH_PULL_REQUESTS_NONE.load()}
         ),

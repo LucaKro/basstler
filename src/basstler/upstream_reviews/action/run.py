@@ -22,7 +22,7 @@ from basstler.upstream_reviews.action.exchange import (
 )
 from basstler.upstream_reviews.action.recording import ActionResult
 from basstler_domain_model.github.clients import (
-    GitHubCommandLineClient,
+    GitHubApi,
 )
 from basstler.upstream_reviews.request import UpstreamReadRequest
 
@@ -57,7 +57,7 @@ class ActionRun:
                 request, GitHubRepository.from_environment(request.upstream)
             )
         return ActionResult.answering(
-            UpstreamReadRequest.from_json(data), GitHubCommandLineClient()
+            UpstreamReadRequest.from_json(data), GitHubApi.from_environment()
         )
 
     def write_answer(self) -> None:

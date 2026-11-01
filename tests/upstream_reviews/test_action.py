@@ -9,6 +9,8 @@ fork - so installing, requesting and collecting a result are exercised as git co
 
 from __future__ import annotations
 
+from http import HTTPStatus
+
 import json
 import subprocess
 from dataclasses import dataclass, field
@@ -47,7 +49,7 @@ from basstler.upstream_reviews.action.recording import (
 )
 from basstler.upstream_reviews.action.run import ActionRun
 from basstler_domain_model.github.clients import (
-    GitHubCommandLineClient,
+    GitHubApi,
     RestClient,
 )
 from basstler.upstream_reviews.exceptions import (
@@ -58,7 +60,7 @@ from basstler.upstream_reviews.exceptions import (
     ActionRunNotStarted,
 )
 from basstler_domain_model.github.exceptions import (
-    GitHubCommandFailed,
+    GitHubRequestFailed,
     UpstreamPullRequestNotFound,
 )
 from basstler_domain_model.github.readers import (
@@ -98,11 +100,13 @@ The fork the bare remote stands in for.
 """
 
 
-@dataclass
-class RecordedGitHub(GitHubCommandLineClient):
+@dataclass(frozen=True)
+class RecordedGitHub(GitHubApi):
     """
-    Answers from the recorded responses, in order, instead of calling ``gh``.
+    Answers from the recorded responses, in order, instead of calling GitHub.
     """
+
+    token: str = ""
 
     responses: list[dict[str, Any]] = field(default_factory=list)
     """
@@ -253,9 +257,7 @@ def test_the_error_is_what_the_reader_raises():
 def test_the_run_answers_a_pull_request_report_request_with_its_recording(
     tmp_path, monkeypatch
 ):
-    monkeypatch.setattr(
-        basstler.upstream_reviews.action.run, "GitHubCommandLineClient", github
-    )
+    monkeypatch.setattr(GitHubApi, "from_environment", github)
     request_file = tmp_path / ActionFile.REQUEST
     request_file.write_text(json.dumps(request().as_sent()))
 
@@ -476,7 +478,9 @@ class ListedRuns(RestClient):
         """:return: The listing."""
         self.paths.append(path)
         if self.runs is None:
-            raise GitHubCommandFailed("gh", 1, "HTTP 403")
+            raise GitHubRequestFailed(
+                status=HTTPStatus.FORBIDDEN, detail="", method="GET", path=path
+            )
         return {"workflow_runs": self.runs}
 
     def get_pages(self, path: str) -> list[Any]:

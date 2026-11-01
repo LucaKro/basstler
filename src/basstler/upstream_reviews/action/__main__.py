@@ -27,7 +27,11 @@ Commands::
 
 from __future__ import annotations
 
-from basstler_domain_model.github.exceptions import PullRequestReadError
+from basstler_domain_model.github.exceptions import (
+    GitHubCredentialUnavailableError,
+    GitHubRequestFailed,
+    PullRequestReadError,
+)
 
 import argparse
 import sys
@@ -54,7 +58,7 @@ from basstler.upstream_reviews.action.read import (
 )
 from basstler.upstream_reviews.action.run import ActionRun
 from basstler_domain_model.github.clients import (
-    GitHubCommandLineClient,
+    GitHubApi,
 )
 from basstler.upstream_reviews.exceptions import (
     ActionUnavailable,
@@ -196,7 +200,7 @@ def main(argv: list[str] | None = None) -> int:
         action_read = ActionRead(
             branch,
             UpstreamReadRequest.from_arguments(arguments, arguments.upstream),
-            GitHubCommandLineClient(),
+            GitHubApi.from_environment(),
         )
         commit = action_read.send()
         result = action_read.wait(arguments.timeout, commit)
@@ -204,7 +208,12 @@ def main(argv: list[str] | None = None) -> int:
     except ActionUnavailable as failure:
         logger.error(failure)
         return ActionExitCode.UNAVAILABLE
-    except (PullRequestReadError, GitCommandFailed) as failure:
+    except (
+        PullRequestReadError,
+        GitHubRequestFailed,
+        GitHubCredentialUnavailableError,
+        GitCommandFailed,
+    ) as failure:
         logger.error(failure)
         return ActionExitCode.READ_FAILED
     return ActionExitCode.SUCCESS

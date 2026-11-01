@@ -39,7 +39,7 @@ from basstler.upstream_reviews.exceptions import (
     ActionRunNotStarted,
 )
 from basstler_domain_model.github.exceptions import (
-    GitHubCommandFailed,
+    GitHubRequestFailed,
 )
 from basstler_domain_model.github.vocabulary import (
     CheckOutcome,
@@ -245,7 +245,7 @@ class ActionRead(Generic[AnswerType]):
             return
         try:
             page = WorkflowRunPage.from_json(self.runs.get(WorkflowRunPage.path(fork)))
-        except GitHubCommandFailed:
+        except GitHubRequestFailed:
             return
         run = page.run_for(commit)
         if run is None:

@@ -8,7 +8,7 @@ a session working in a fork can never attach the fork's same-named upstream besi
 The read then happens in a helper session that has only the upstream attached. A helper
 runs no code from any repository outside its own scope, so its prompt carries the
 program: :mod:`basstler.upstream_reviews.helper.fetch`, code alone, configured with the paths
-of :class:`UpstreamRestRoute` and the fields the REST models read. Its output reaches
+of :class:`RepositoryRoute` and the fields the REST models read. Its output reaches
 this session's transcript once the helper's events are read, and the report replays it
 through :class:`RestPullRequestReader`, so it renders exactly what a direct read does.
 
@@ -23,7 +23,11 @@ Two commands, run around the helper session::
 
 from __future__ import annotations
 
-from basstler_domain_model.github.exceptions import PullRequestReadError
+from basstler_domain_model.github.exceptions import (
+    GitHubCredentialUnavailableError,
+    GitHubRequestFailed,
+    PullRequestReadError,
+)
 
 import argparse
 import ast
@@ -53,9 +57,7 @@ from basstler.upstream_reviews.helper.recording import (
     RecordedJobLog,
     SessionTranscript,
 )
-from basstler_domain_model.github.readers import (
-    UpstreamRestRoute,
-)
+from basstler_domain_model.github.routes import RepositoryRoute
 from basstler.upstream_reviews.request import (
     UpstreamReadRequest,
 )
@@ -88,7 +90,7 @@ class HelperScript:
     """
     What the helper session runs: :mod:`basstler.upstream_reviews.helper.fetch`, configured.
 
-    Its paths come from :class:`UpstreamRestRoute` and its fields from the REST models,
+    Its paths come from :class:`RepositoryRoute` and its fields from the REST models,
     so the helper fetches exactly what :class:`RestPullRequestReader` asks the
     recording for, and nothing the models do not read.
     """
@@ -101,7 +103,7 @@ class HelperScript:
     @property
     def configuration(self) -> dict[str, Any]:
         """:return: Everything the script reads, passed to it as JSON."""
-        route = UpstreamRestRoute(self.request.upstream)
+        route = RepositoryRoute(self.request.upstream)
         # The route is asked for its paths with placeholders standing in for values the
         # script only learns as it reads, so it fills in the reader's own paths.
         number, sha = HelperPlaceholder.NUMBER.value, HelperPlaceholder.SHA.value
@@ -279,7 +281,11 @@ def main(argv: list[str] | None = None) -> int:
             request.identifier, SessionTranscript.current().chunks(request.identifier)
         )
         logger.info(recording.report(request, arguments.include_resolved))
-    except PullRequestReadError as failure:
+    except (
+        PullRequestReadError,
+        GitHubRequestFailed,
+        GitHubCredentialUnavailableError,
+    ) as failure:
         logger.error(failure)
         return 1
     return 0

@@ -4,7 +4,11 @@ What the fork's Action recorded of the upstream, and replaying it in place of Gi
 
 from __future__ import annotations
 
-from basstler_domain_model.github.exceptions import PullRequestReadError
+from basstler_domain_model.github.exceptions import (
+    GitHubCredentialUnavailableError,
+    GitHubRequestFailed,
+    PullRequestReadError,
+)
 
 import hashlib
 from dataclasses import dataclass, field
@@ -18,7 +22,7 @@ from basstler.upstream_reviews.action.exchange import (
     ActionAnswer,
 )
 from basstler_domain_model.github.clients import (
-    GitHubCommandLineClient,
+    GitHubApi,
     GraphQLClient,
     JobLogReader,
 )
@@ -147,9 +151,7 @@ class ActionResult(ActionAnswer):
         )
 
     @classmethod
-    def answering(
-        cls, request: UpstreamReadRequest, client: GitHubCommandLineClient
-    ) -> ActionResult:
+    def answering(cls, request: UpstreamReadRequest, client: GitHubApi) -> ActionResult:
         """
         What the run commits: the recording of a read, or what stopped it.
 
@@ -166,7 +168,11 @@ class ActionResult(ActionAnswer):
                 recording,
                 include_resolved=False,
             )
-        except PullRequestReadError as failure:
+        except (
+            PullRequestReadError,
+            GitHubRequestFailed,
+            GitHubCredentialUnavailableError,
+        ) as failure:
             return cls(request.identifier, error=str(failure))
         return cls(request.identifier, None, recording.responses, recording.job_logs)
 
@@ -208,7 +214,7 @@ class RecordingClient(GraphQLClient, JobLogReader):
     Reads GitHub through another client, keeping everything it answers.
     """
 
-    client: GitHubCommandLineClient
+    client: GitHubApi
     """
     The client that reads.
     """
