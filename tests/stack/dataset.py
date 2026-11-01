@@ -10,7 +10,9 @@ from enum import Enum, IntEnum, StrEnum
 from urllib.parse import parse_qs as parse_query_string
 from urllib.parse import urlsplit as split_url
 
-from basstler.repository import Repository
+from basstler_domain_model.repository import (
+    Repository,
+)
 from basstler.stack.model import (
     PullRequest,
     Stack,

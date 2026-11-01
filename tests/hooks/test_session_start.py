@@ -23,7 +23,9 @@ from pathlib import Path
 import pytest
 
 from basstler.locations import BasstlerVariable, PluginLocation, ProjectLocation
-from basstler.repository import Repository
+from basstler_domain_model.repository import (
+    Repository,
+)
 from basstler.shell_configuration import ShellConfigurationFunction
 from basstler.upstream_reviews.action.branch import InstallationState
 from basstler.plan.model import PlanDocument

@@ -19,7 +19,9 @@ from pathlib import Path
 import pytest
 
 from basstler.locations import PluginLocation, ProjectLocation
-from basstler.maintenance.constants import GitHubClient
+from basstler_domain_model.github.vocabulary import (
+    GitHubClient,
+)
 
 from ..constants.environment import ScrubbedEnvironmentPrefix, SearchPathVariable
 from ..constants.notes import ScratchBranch

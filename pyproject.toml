@@ -37,6 +37,7 @@ dependencies = [
     "markdown>=3",
     "nh3>=0.2",
     "rustworkx>=0.15",
+    "basstler-domain-model @ git+https://github.com/LucaKro/basstler_domain_model",
 ]
 dynamic = ["version"]
 
@@ -48,6 +49,11 @@ dynamic = ["version"]
 # commit. The build reads the version from that tag, so no file names it and nothing is
 # committed after a merge; a commit past the latest tag builds as the next development
 # version, and a source with no git history at all as 0.0.0.
+# basstler-domain-model is installed straight from its repository, which hatch accepts
+# only when told to.
+[tool.hatch.metadata]
+allow-direct-references = true
+
 [tool.hatch.version]
 source = "vcs"
 fallback-version = "0.0.0"

@@ -19,13 +19,17 @@ from pathlib import Path
 import pytest
 
 import basstler.upstream_reviews.helper.fetch
-from basstler.locations import ClaudeCodeVariable
+from basstler_domain_model.environment import (
+    ClaudeCodeVariable,
+)
 from basstler.upstream_reviews.exceptions import (
     HelperOutputIncomplete,
     HelperOutputMissing,
     HelperOutputUnreadable,
     HelperResponseMissing,
     NoRecordedReadRequest,
+)
+from basstler_domain_model.github.exceptions import (
     UpstreamPullRequestNotFound,
 )
 from basstler.upstream_reviews.failure_logs import (
@@ -49,11 +53,13 @@ from basstler.upstream_reviews.report import (
 from basstler.upstream_reviews.request import (
     UpstreamReadRequest,
 )
-from basstler.upstream_reviews.rest_models import (
+from basstler_domain_model.github.vocabulary import (
     RestJSONKey,
+)
+from basstler_domain_model.github.rest_models import (
     RestPullRequestSummary,
 )
-from basstler.upstream_reviews.vocabulary import (
+from basstler_domain_model.github.vocabulary import (
     PullRequestJSONKey,
 )
 

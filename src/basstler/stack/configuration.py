@@ -17,10 +17,14 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
-from basstler.class_property import classproperty
+from basstler_domain_model.class_property import (
+    classproperty,
+)
 from basstler.exit_codes import CommandFailure, StackExitCode
 from basstler.locations import PackageLocation, ProjectLocation
-from basstler.repository import Repository
+from basstler_domain_model.repository import (
+    Repository,
+)
 
 
 class StackSetting(StrEnum):

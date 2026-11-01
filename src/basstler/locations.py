@@ -1,53 +1,17 @@
 """
 Every file and directory this package names, each written once.
 
-..note:: Imports nothing outside the standard library, since :mod:`basstler.setup.dependencies`
-    reads its declaration's location from here before anything is installed.
+..note:: Imports nothing outside the standard library and :mod:`basstler_domain_model`,
+    since :mod:`basstler.setup.dependencies` reads its declaration's location from here
+    before the other dependencies are installed.
 """
 
 from __future__ import annotations
 
-import os
-from enum import ReprEnum
 from pathlib import Path
 
-from basstler.environment import EnvironmentVariable
-
-
-class PathEnumeration(Path, ReprEnum):
-    """
-    An enumeration whose members are paths.
-
-    A member is the path it names - joined onto another with ``/``, opened, passed to a
-    subprocess, formatted as its text - and every path derived from one is a plain
-    :class:`~pathlib.Path`.
-
-    ..warning:: ``Path.name`` shadows the enumeration's own ``name``: ``member.name`` is
-        the path's last component, and the member's name is ``member._name_``.
-    """
-
-    def __hash__(self) -> int:
-        """
-        Hash as the path does, so a member and its path are one key; the enumeration's own
-        hash would tell them apart.
-        """
-        return hash(self.value)
-
-    def __eq__(self, value: object, /) -> bool:
-        """
-        The value of the Enum should be equal to an equivalent Path instance.
-
-        :param value: A Path instance to compare.
-        :return: True if the value is equal to an equivalent Path instance, False otherwise.
-        """
-        return self.value == value
-
-    def with_segments(self, *path_segments: str | os.PathLike[str]) -> Path:
-        """
-        :param path_segments: The segments of a path derived from this one.
-        :return: That path, as a plain path rather than a lookup of a member by value.
-        """
-        return Path(*path_segments)
+from basstler_domain_model.environment import EnvironmentVariable
+from basstler_domain_model.locations import PathEnumeration
 
 
 class PackageLocation(PathEnumeration):
@@ -87,11 +51,6 @@ class PackageLocation(PathEnumeration):
     TEMPLATES = DIRECTORY / "templates"
     """
     The page templates dashboards are rendered from.
-    """
-
-    QUERIES = DIRECTORY / "upstream_reviews" / "queries"
-    """
-    The GraphQL documents the upstream review reader sends.
     """
 
     PLAN_ITEM_MODE_DEFAULTS = DIRECTORY / "plan" / "plan-item-modes.toml"
@@ -344,36 +303,4 @@ class ProjectLocation(PathEnumeration):
     PERSONAL_PLAN_ITEM_MODES = PERSONAL_NOTES / "plan-item-modes.toml"
     """
     The per-user override of :attr:`PackageLocation.PLAN_ITEM_MODE_DEFAULTS`.
-    """
-
-
-class ClaudeCodeVariable(EnvironmentVariable):
-    """
-    The environment variables Claude Code sets for the commands it runs.
-    """
-
-    PROJECT_DIRECTORY = "CLAUDE_PROJECT_DIR"
-    """
-    The root of the project the session runs in.
-    """
-
-    REMOTE = "CLAUDE_CODE_REMOTE"
-    """
-    ``true`` in a Claude Code cloud session, whose proxy answers GitHub's REST API but
-    not its GraphQL API.
-    """
-
-    SESSION_IDENTIFIER = "CLAUDE_CODE_SESSION_ID"
-    """
-    The session's own identifier, which names its transcript file.
-    """
-
-    CONFIGURATION_DIRECTORY = "CLAUDE_CONFIG_DIR"
-    """
-    Where Claude Code keeps its state, transcripts included, when not ``~/.claude``.
-    """
-
-    GIT_BASH_PATH = "CLAUDE_CODE_GIT_BASH_PATH"
-    """
-    The bash Claude Code runs its commands in on Windows, when set.
     """

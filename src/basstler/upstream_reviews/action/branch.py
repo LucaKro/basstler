@@ -11,10 +11,17 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
-from basstler.class_property import classproperty
-from basstler.maintenance.git_commands import GitCommandRunner, ProposedPush
+from basstler_domain_model.class_property import (
+    classproperty,
+)
+from basstler_domain_model.git.commands import (
+    GitCommandRunner,
+    ProposedPush,
+)
 from basstler.render_common import create_template_environment
-from basstler.repository import Repository
+from basstler_domain_model.repository import (
+    Repository,
+)
 from basstler.upstream_reviews.vocabulary import (
     ActionBranch,
     ActionFile,

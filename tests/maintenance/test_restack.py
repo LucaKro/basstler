@@ -12,8 +12,10 @@ import pytest
 
 from basstler.exit_codes import StackExitCode
 from basstler.stack.commit_move import RefusalReason
-from basstler.stack.model import (
+from basstler_domain_model.git.commands import (
     IntegrationStrategy,
+)
+from basstler.stack.model import (
     PullRequest,
 )
 
@@ -22,7 +24,9 @@ from basstler.maintenance.fast_forward import (
     FastForwardOutcome,
     fast_forward,
 )
-from basstler.maintenance.git_commands import GitCommandFailed, ProposedPush
+from basstler_domain_model.git.exceptions import (
+    GitCommandFailed,
+)
 from basstler.maintenance.restack_procedure import restack
 from basstler.maintenance.restack_steps import (
     ConflictResponse,
@@ -288,12 +292,8 @@ def test_only_the_rebase_strategy_authorises_rewriting_published_history():
     """
     configuration = make_configuration()
 
-    merging = ProposedPush.publishing(
-        configuration, "a-branch", IntegrationStrategy.MERGE
-    )
-    rebasing = ProposedPush.publishing(
-        configuration, "a-branch", IntegrationStrategy.REBASE
-    )
+    merging = configuration.propose_push("a-branch", IntegrationStrategy.MERGE)
+    rebasing = configuration.propose_push("a-branch", IntegrationStrategy.REBASE)
 
     assert not merging.with_lease
     assert rebasing.with_lease

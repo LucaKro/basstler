@@ -8,10 +8,14 @@ from __future__ import annotations
 from pathlib import Path
 
 from basstler.locations import ProjectLocation
-from basstler.maintenance.git_commands import GitCommandRunner
+from basstler_domain_model.git.commands import (
+    GitCommandRunner,
+)
 from basstler.plan_site.hub import NotesBranch, PlanHub
 from basstler.plan.model import PlanDocument
-from basstler.repository import Repository
+from basstler_domain_model.repository import (
+    Repository,
+)
 from basstler.setup.steps import PersonalNotesSetting
 
 from ..constants.site import SitePlan, SiteRepository, SiteSampleText

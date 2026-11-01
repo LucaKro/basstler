@@ -31,18 +31,26 @@ The exit status is the result. ``run-report`` prints the finish summary
 
 from __future__ import annotations
 
+from basstler_domain_model.github.exceptions import PullRequestReadError
+
 import argparse
 import sys
 from pathlib import Path
 
-from basstler.exit_codes import CommandFailure, ExitCode, StackExitCode
+from basstler.exit_codes import (
+    CommandFailure,
+    DomainModelFailure,
+    ExitCode,
+    StackExitCode,
+)
 from basstler.locations import RepositoryStateLocation
 from basstler.maintenance.commands import MaintenanceCommand, MaintenancePass
-from basstler.maintenance.git_commands import GitCommandRunner
+from basstler_domain_model.git.commands import (
+    GitCommandRunner,
+)
 from basstler.maintenance.upstream_action import UpstreamReadRoute
 from basstler.stack.settings import Configuration
 from basstler.standard_streams import StandardStreamHandler
-from basstler.upstream_reviews.exceptions import UpstreamReadError
 
 logger = StandardStreamHandler.logger_for(__name__)
 """
@@ -116,7 +124,10 @@ def _dispatch() -> ExitCode:
     except CommandFailure as error:
         logger.error(f"{error}")
         return error.exit_code
-    except UpstreamReadError as error:
+    except DomainModelFailure.errors as error:
+        logger.error(f"{error}")
+        return DomainModelFailure.exit_code_of(error)
+    except PullRequestReadError as error:
         logger.error(f"{error}")
         return StackExitCode.UPSTREAM_UNREADABLE
 

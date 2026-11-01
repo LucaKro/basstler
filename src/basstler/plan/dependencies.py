@@ -12,7 +12,9 @@ from pathlib import Path
 
 import yaml
 
-from basstler.class_property import classproperty
+from basstler_domain_model.class_property import (
+    classproperty,
+)
 from basstler.dashboard.cards import DependencyChip
 from basstler.dashboard.plan import Item, Plan
 from basstler.plan.model import PlanDocument

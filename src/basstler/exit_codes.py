@@ -20,9 +20,19 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from enum import IntEnum
+from enum import Enum, IntEnum
 
-from basstler.class_property import classproperty
+from basstler_domain_model.class_property import classproperty
+from basstler_domain_model.git.exceptions import (
+    GitCommandFailed,
+    UnresolvableReferenceError,
+)
+from basstler_domain_model.github.exceptions import (
+    ContradictoryLabelWriteError,
+    GitHubCredentialUnavailableError,
+    GitHubRequestFailed,
+    MissingPullRequestFieldError,
+)
 
 
 class ExitCode(IntEnum):
@@ -202,3 +212,77 @@ class CommandFailure(Exception, ABC):
 
         :return: The status.
         """
+
+
+# %% the domain model's errors
+
+
+class DomainModelFailure(Enum):
+    """
+    The errors :mod:`basstler_domain_model` raises that stop a stacked-pull-request
+    command, and the status each ends it with.
+
+    The domain model knows nothing of exit statuses, so its errors cannot be
+    :class:`CommandFailure`\\ s; this table is where they get one.
+    """
+
+    def __init__(self, error: type[Exception], exit_code: StackExitCode) -> None:
+        """
+        :param error: The error the member stands for.
+        :param exit_code: The status a command ends with when that error stops it.
+        """
+        self.error = error
+        self.exit_code = exit_code
+
+    GIT_COMMAND_FAILED = GitCommandFailed, StackExitCode.GIT_COMMAND_FAILED
+    """
+    A git command the command depended on failed.
+    """
+
+    UNRESOLVABLE_REFERENCE = (
+        UnresolvableReferenceError,
+        StackExitCode.GIT_COMMAND_FAILED,
+    )
+    """
+    A git reference a decision depended on names no commit in the checkout.
+    """
+
+    GITHUB_REQUEST_REFUSED = GitHubRequestFailed, StackExitCode.GITHUB_REQUEST_FAILED
+    """
+    The GitHub API refused a call the command depended on.
+    """
+
+    CREDENTIAL_UNAVAILABLE = (
+        GitHubCredentialUnavailableError,
+        StackExitCode.CREDENTIAL_UNAVAILABLE,
+    )
+    """
+    No GitHub token was set.
+    """
+
+    PULL_REQUEST_FIELD_MISSING = MissingPullRequestFieldError, StackExitCode.USAGE
+    """
+    A fetched pull request omitted a field the command reads it by.
+    """
+
+    CONTRADICTORY_LABEL_WRITE = ContradictoryLabelWriteError, StackExitCode.USAGE
+    """
+    A label was asked to be both added and removed.
+    """
+
+    @classproperty
+    def errors(cls) -> tuple[type[Exception], ...]:
+        """
+        Every error this table gives a status, in the form ``except`` takes.
+        """
+        return tuple(member.error for member in cls)
+
+    @classmethod
+    def exit_code_of(cls, error: Exception) -> StackExitCode:
+        """
+        :param error: An error of one of :attr:`errors`.
+        :return: The status a command ends with when it stops on *error*.
+        """
+        return next(
+            member.exit_code for member in cls if isinstance(error, member.error)
+        )

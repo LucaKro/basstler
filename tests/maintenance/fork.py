@@ -15,27 +15,35 @@ from collections.abc import Iterable, Mapping
 from dataclasses import field as dataclasses_field
 from pathlib import Path
 
-from basstler.repository import Repository
+from basstler_domain_model.repository import (
+    Repository,
+)
 from basstler.stack.model import (
     PullRequest,
     Stack,
 )
 from basstler.stack.settings import Configuration
-from basstler.upstream_reviews.vocabulary import RollupState
+from basstler_domain_model.github.vocabulary import (
+    RollupState,
+)
 
 import basstler.maintenance.__main__
 import basstler.maintenance.restack_procedure
 from basstler.locations import ProjectLocation
-from basstler.maintenance.board import (
-    BoardExport,
+from basstler.maintenance.board import BoardExport, UpstreamPullRequests
+from basstler_domain_model.github.pull_request_fields import PullRequestHeadKey
+from basstler_domain_model.github.vocabulary import RestJSONKey
+from basstler_domain_model.github.repository_client import (
     CommitChecks,
+)
+from basstler_domain_model.github.pull_request_fields import (
     PullRequestField,
-    PullRequestHeadKey,
-    PullRequestRecord,
-    UpstreamPullRequests,
+    PullRequestPayload,
 )
 from basstler.maintenance.git_commands import (
     BranchAncestry,
+)
+from basstler_domain_model.git.commands import (
     GitCommandRunner,
 )
 
@@ -442,8 +450,8 @@ class ChecksReportedOn(CommitChecks):
 
 
 def an_export(
-    records: Iterable[PullRequestRecord],
-    upstream_records: Iterable[PullRequestRecord] = (),
+    records: Iterable[PullRequestPayload],
+    upstream_records: Iterable[PullRequestPayload] = (),
     checks: CommitChecks | None = None,
 ) -> BoardExport:
     """
@@ -494,7 +502,7 @@ def an_api_record(
                 if head_repository is None
                 else {PullRequestHeadKey.FULL_NAME: head_repository.full_name}
             ),
-            PullRequestHeadKey.COMMIT: head_commit,
+            RestJSONKey.SHA: head_commit,
         },
         PullRequestField.BASE.key: {"ref": base},
         PullRequestField.DRAFT.key: draft,

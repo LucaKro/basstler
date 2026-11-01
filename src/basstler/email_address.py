@@ -6,7 +6,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from basstler.class_property import classproperty
+from basstler_domain_model.class_property import (
+    classproperty,
+)
 from basstler.exceptions import MalformedEmailAddressError
 
 # %% the address

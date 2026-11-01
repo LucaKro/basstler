@@ -21,20 +21,20 @@ import pytest
 from basstler.exceptions import MalformedEmailAddressError
 from basstler.exit_codes import PersonalNotesSetupExitCode
 from basstler.github_labels import GitHubLabel
-from basstler.locations import (
+from basstler_domain_model.environment import (
     ClaudeCodeVariable,
+)
+from basstler.locations import (
     PluginLocation,
     PluginSkillLocation,
     ProjectLocation,
 )
-from basstler.maintenance.github import (
-    AccountField,
-    GitHubPath,
-    GitHubRepository,
-    LabelField,
-)
+from basstler_domain_model.github.repository_client import GitHubPath, GitHubRepository
+from basstler_domain_model.github.vocabulary import RestJSONKey
 from basstler.plugin_root import PluginRoot
-from basstler.repository import Repository
+from basstler_domain_model.repository import (
+    Repository,
+)
 from basstler.setup.exceptions import ForeignNotesRemoteError
 from basstler.setup.personal_notes import (
     PersonalNotesSetup,
@@ -104,12 +104,12 @@ class GitHubAnsweringFromMemory(GitHubRepository):
         self, method: str, path: str, payload: Mapping[str, Any] | None = None
     ) -> Any:
         if path == str(GitHubPath.AUTHENTICATED_USER):
-            return {AccountField.LOGIN: self.login}
+            return {RestJSONKey.LOGIN: self.login}
         if payload is not None:
             self.created_labels.append(payload)
-            self.present_labels.add(payload[LabelField.NAME])
+            self.present_labels.add(payload[RestJSONKey.NAME])
             return payload
-        return [{LabelField.NAME: label} for label in sorted(self.present_labels)]
+        return [{RestJSONKey.NAME: label} for label in sorted(self.present_labels)]
 
 
 # %% the scratch layout
@@ -447,8 +447,8 @@ def test_creates_only_the_missing_labels_when_asked():
 
     assert github.created_labels == [
         {
-            LabelField.NAME: GitHubLabel.IN_REVIEW,
-            LabelField.DESCRIPTION: GitHubLabel.IN_REVIEW.purpose,
+            RestJSONKey.NAME: GitHubLabel.IN_REVIEW,
+            RestJSONKey.DESCRIPTION: GitHubLabel.IN_REVIEW.description,
         }
     ]
 

@@ -1,60 +1,23 @@
 """
-Krrood's ``DataclassException``, copied rather than imported, which is the boundary
-decision 12 records for this tooling, and the errors built on it.
+The errors raised across this package's subpackages.
 """
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from basstler.class_property import classproperty
-from basstler.exit_codes import CommandFailure, StackExitCode
-from basstler.locations import BasstlerVariable, ClaudeCodeVariable, PluginLocation
+from basstler_domain_model.class_property import classproperty
+from basstler_domain_model.exceptions import DataclassException
 
-
-class DataclassException(Exception, ABC):
-    """
-    A base exception class for dataclass-based exceptions.
-
-    Subclasses implement error_message() and suggest_correction(); both are evaluated at
-    construction time and composed into the actual exception message (the args passed to
-    Exception). A non-empty suggest_correction() is rendered as a trailing "Suggestion:
-    ..." line. Subclasses that override __post_init__ must call super().__post_init__()
-    at the end.
-    """
-
-    def __post_init__(self):
-        # BaseException.__new__ bypasses the usual ABC instantiation check, so enforce it here.
-        if getattr(type(self), "__abstractmethods__", None):
-            raise TypeError(
-                f"Can't instantiate abstract class {type(self).__name__} without an implementation of "
-                f"{', '.join(sorted(type(self).__abstractmethods__))}."
-            )
-        message = self.error_message()
-        correction = self.suggest_correction()
-        if correction:
-            message = f"{message}\nSuggestion: {correction}"
-        super().__init__(message)
-
-    def __str__(self) -> str:
-        # Stdlib mixins like KeyError override __str__ to repr their args; always render the
-        # plain message that __post_init__ baked into the args.
-        return Exception.__str__(self)
-
-    @abstractmethod
-    def error_message(self) -> str:
-        """
-        :return: A human-readable description of what went wrong.
-        """
-
-    @abstractmethod
-    def suggest_correction(self) -> str:
-        """
-        :return: Advice on how to fix the error, or an empty string if there is no specific advice.
-        """
+from basstler.locations import (
+    BasstlerVariable,
+    PluginLocation,
+)
+from basstler_domain_model.environment import (
+    ClaudeCodeVariable,
+)
 
 
 @dataclass
@@ -99,32 +62,6 @@ class UnsafeNotesPathError(DataclassException, ValueError):
 
     def suggest_correction(self) -> str:
         return "give a path relative to the branch's root, with no '..' component"
-
-
-@dataclass
-class UnresolvableReferenceError(CommandFailure, DataclassException, LookupError):
-    """
-    Raised when a git reference a decision depends on names no commit in the checkout.
-    """
-
-    @classproperty
-    def exit_code(cls) -> StackExitCode:
-        """:return: The status this kind of error ends a command with."""
-        return StackExitCode.GIT_COMMAND_FAILED
-
-    reference: str
-    """
-    The reference git could not resolve.
-    """
-
-    def error_message(self) -> str:
-        return f"git cannot resolve '{self.reference}' to a commit in this checkout"
-
-    def suggest_correction(self) -> str:
-        return (
-            "fetch the branch it names from its remote, and check that the branch "
-            "still exists there"
-        )
 
 
 @dataclass

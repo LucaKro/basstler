@@ -43,17 +43,27 @@ from basstler.plan.validation import PlanValidator
 from basstler.pull_request_state import PullRequestRecord, PullRequestsByRepository
 from basstler.plan_site.hub_page import HubPage, RepositorySummary, SiteSummary
 from basstler.dashboard.index_page import IndexPage, PlanSummary, ProgressCard
-from basstler.environment import GitHubCredentialVariable
-from basstler.maintenance.board import PullRequestField
-from basstler.maintenance.github import (
+from basstler_domain_model.environment import (
+    GitHubCredentialVariable,
+)
+from basstler_domain_model.github.pull_request_fields import (
+    PullRequestField,
+)
+from basstler_domain_model.github.exceptions import (
     GitHubCredentialUnavailableError,
-    GitHubRepository,
     GitHubRequestFailed,
+)
+from basstler_domain_model.github.repository_client import (
+    GitHubRepository,
 )
 from basstler.plan_site.hub import NotesBranch, PlanHub
 from basstler.plan.model import PlanDocument
 from basstler.plan.model import ItemStatus
-from basstler.repository import GitHubAddress, PullRequestReference, Repository
+from basstler_domain_model.repository import (
+    GitHubAddress,
+    PullRequestReference,
+    Repository,
+)
 from basstler.standard_streams import StandardStreamHandler
 
 logger = StandardStreamHandler.logger_for(__name__)

@@ -15,7 +15,12 @@ import pytest
 
 from basstler.dashboard.plan import Plan
 from basstler.plan.dependencies import DependencyReference, DependencyResolver
-from basstler.pull_request_state import PullRequestRecord, PullRequestState
+from basstler.pull_request_state import (
+    PullRequestRecord,
+)
+from basstler_domain_model.github.vocabulary import (
+    PullRequestState,
+)
 from basstler.plan_site.__main__ import (
     GitHubPullRequestSource,
     HubSite,
@@ -26,16 +31,23 @@ from basstler.plan_site.__main__ import (
     SiteFile,
 )
 from basstler.github_labels import GitHubLabel
-from basstler.maintenance.board import PullRequestField
-from basstler.maintenance.github import (
+from basstler_domain_model.github.pull_request_fields import (
+    PullRequestField,
+)
+from basstler_domain_model.github.repository_client import (
     GitHubRepository,
-    GitHubRequestFailed,
     PullRequestListState,
+)
+from basstler_domain_model.github.exceptions import (
+    GitHubRequestFailed,
 )
 from basstler.plan_site.hub import PlanHub
 from basstler.plan.model import PlanDocument
 from basstler.plan.model import ItemStatus
-from basstler.repository import PullRequestReference, Repository
+from basstler_domain_model.repository import (
+    PullRequestReference,
+    Repository,
+)
 
 from ..constants.paths import DatasetLocation
 from ..constants.site import SitePlan, SiteRepository, SiteSampleText

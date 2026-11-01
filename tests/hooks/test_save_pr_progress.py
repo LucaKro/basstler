@@ -10,7 +10,9 @@ from enum import StrEnum
 
 import pytest
 
-from basstler.environment import GitHubCredentialVariable
+from basstler_domain_model.environment import (
+    GitHubCredentialVariable,
+)
 from basstler.locations import PluginLocation, ProjectLocation
 from basstler.plan.size_limits import Measure
 from basstler.personal_notes.progress_notes import (

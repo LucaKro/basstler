@@ -13,10 +13,16 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from basstler.class_property import classproperty
-from basstler.locations import ClaudeCodeVariable
-from basstler.repository import Repository
-from basstler.upstream_reviews.clients import (
+from basstler_domain_model.class_property import (
+    classproperty,
+)
+from basstler_domain_model.environment import (
+    ClaudeCodeVariable,
+)
+from basstler_domain_model.repository import (
+    Repository,
+)
+from basstler_domain_model.github.clients import (
     JobLogReader,
     RestClient,
 )
@@ -26,15 +32,17 @@ from basstler.upstream_reviews.exceptions import (
     HelperOutputUnreadable,
     HelperResponseMissing,
 )
-from basstler.upstream_reviews.readers import RestPullRequestReader
+from basstler_domain_model.github.readers import (
+    RestPullRequestReader,
+)
 from basstler.upstream_reviews.request import (
     HelperJSONKey,
     UpstreamReadRequest,
 )
-from basstler.upstream_reviews.rest_models import (
+from basstler_domain_model.github.vocabulary import (
     RestJSONKey,
 )
-from basstler.upstream_reviews.vocabulary import (
+from basstler_domain_model.github.vocabulary import (
     JSONModel,
     PullRequestJSONKey,
 )

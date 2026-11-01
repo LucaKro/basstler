@@ -9,10 +9,16 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from basstler.class_property import classproperty
-from basstler.exceptions import DataclassException
+from basstler_domain_model.class_property import (
+    classproperty,
+)
+from basstler_domain_model.exceptions import (
+    DataclassException,
+)
 from basstler.exit_codes import CommandFailure, StackExitCode
-from basstler.repository import Repository
+from basstler_domain_model.repository import (
+    Repository,
+)
 from basstler.stack.configuration import StackSetting
 
 if TYPE_CHECKING:
@@ -106,35 +112,6 @@ class BoardUnavailable(StackError, RuntimeError):
 
 
 # %% label writes
-
-
-@dataclass
-class ContradictoryLabelWriteError(StackError, ValueError):
-    """
-    Raised when one write is asked both to carry a label and to drop it.
-    """
-
-    @classproperty
-    def exit_code(cls) -> StackExitCode:
-        """:return: The status this kind of error ends a command with."""
-        return StackExitCode.USAGE
-
-    labels: tuple[str, ...]
-    """
-    The labels asked for in both directions.
-    """
-
-    def error_message(self) -> str:
-        return (
-            f"cannot both add and remove {', '.join(self.labels)}: "
-            f"either outcome would be a guess at what was meant"
-        )
-
-    def suggest_correction(self) -> str:
-        return "Ask for each label to be either added or removed, not both."
-
-
-# %% promotion links
 
 
 @dataclass

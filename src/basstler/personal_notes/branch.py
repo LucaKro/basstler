@@ -16,7 +16,9 @@ from pathlib import Path, PurePosixPath
 from types import TracebackType
 
 from basstler.exceptions import NotesBranchMissingError, UnsafeNotesPathError
-from basstler.maintenance.git_commands import GitCommandRunner
+from basstler_domain_model.git.commands import (
+    GitCommandRunner,
+)
 from basstler.setup.steps import PersonalNotesSetting
 from basstler.shell_configuration import FetchedBranchReference
 

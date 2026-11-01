@@ -9,16 +9,20 @@ import re
 from dataclasses import dataclass
 from enum import Enum, StrEnum
 
-from basstler.class_property import classproperty
-from basstler.repository import Repository
-from basstler.upstream_reviews.clients import (
+from basstler_domain_model.class_property import (
+    classproperty,
+)
+from basstler_domain_model.repository import (
+    Repository,
+)
+from basstler_domain_model.github.clients import (
     JobLogReader,
 )
-from basstler.upstream_reviews.pull_request_models import (
+from basstler_domain_model.github.pull_request_models import (
     CheckResult,
     CheckStatus,
 )
-from basstler.upstream_reviews.vocabulary import (
+from basstler_domain_model.github.vocabulary import (
     CheckOutcome,
 )
 

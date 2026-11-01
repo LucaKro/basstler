@@ -16,7 +16,9 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import TypeVar
 
-from basstler.class_property import classproperty
+from basstler_domain_model.class_property import (
+    classproperty,
+)
 
 # %% a command
 
@@ -34,7 +36,7 @@ class Command(ABC):
 
     The name and the description belong to the class rather than to an instance - the
     parser reads them to build the command line before anything is constructed - so they
-    are :class:`basstler.class_property.classproperty` members. The name follows from the
+    are :class:`basstler_domain_model.class_property.classproperty` members. The name follows from the
     class name; the description is abstract, and :meth:`every_command` builds every
     subclass, so a command that cannot say what it does is refused as its tool is
     imported.

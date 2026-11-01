@@ -9,8 +9,12 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, TypeVar
 
-from basstler.class_property import classproperty
-from basstler.upstream_reviews.vocabulary import JSONModel
+from basstler_domain_model.class_property import (
+    classproperty,
+)
+from basstler_domain_model.github.vocabulary import (
+    JSONModel,
+)
 
 # %% vocabulary
 

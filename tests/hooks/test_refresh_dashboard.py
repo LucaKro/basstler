@@ -19,7 +19,6 @@ from types import ModuleType
 
 import pytest
 
-import basstler.class_property
 import basstler.dashboard.exceptions
 import basstler.dashboard.plan_page
 import basstler.dashboard.publication
@@ -131,7 +130,6 @@ def scratch_project_root(tmp_path: Path) -> Path:
             basstler.dashboard.exceptions,
             basstler.exceptions,
             basstler.exit_codes,
-            basstler.class_property,
             basstler.environment,
             basstler.locations,
             basstler.standard_streams,

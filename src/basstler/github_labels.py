@@ -5,18 +5,21 @@ The dashboard reads some of them, a maintenance pass writes one, and setup creat
 all of them on a fork. One enum names them all, so a label one part recognizes cannot be
 missing from the set setup creates.
 
-Kept free of third-party imports, so the setup script can read it before the dashboard's
-dependencies are installed.
+Kept free of third-party imports other than :mod:`basstler_domain_model`, so the setup
+script can read it before the dashboard's dependencies are installed.
 """
 
 from __future__ import annotations
 
-from enum import StrEnum
+from enum import ReprEnum
 
-from basstler.repository import Repository
+from basstler_domain_model.github.labels import Label
+from basstler_domain_model.repository import (
+    Repository,
+)
 
 
-class GitHubLabel(StrEnum):
+class GitHubLabel(Label, ReprEnum):
     """
     Every label this tooling reads or applies, and therefore every one a fork must
     carry, each with the description it is created with.
@@ -25,22 +28,17 @@ class GitHubLabel(StrEnum):
     it.
     """
 
-    purpose: str
-    """
-    What the label means, used as its description when it is created.
-    """
-
-    def __new__(cls, label: str, purpose: str) -> GitHubLabel:
+    def __new__(cls, label: str, description: str) -> GitHubLabel:
         """
         Make a member that is its own label name and carries what the label means.
 
         :param label: The label's name, as GitHub stores it.
-        :param purpose: What it means, used as the description when it is created.
+        :param description: What it means, which it is created with.
         :return: The member.
         """
         member = str.__new__(cls, label)
         member._value_ = label
-        member.purpose = purpose
+        member.description = description
         return member
 
     MERGED = ("merged", "The changes landed even though GitHub never recorded a merge")
@@ -77,5 +75,5 @@ class GitHubLabel(StrEnum):
         """
         return (
             f"gh label create {self.value} --repo {repository.full_name} "
-            f'--description "{self.purpose}"'
+            f'--description "{self.description}"'
         )

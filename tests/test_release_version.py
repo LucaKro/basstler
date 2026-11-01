@@ -4,6 +4,8 @@ What the release workflow tags a merge commit as, and its tag step against a scr
 
 from __future__ import annotations
 
+from basstler_domain_model.github.vocabulary import RestJSONKey
+
 import json
 import os
 import subprocess
@@ -15,14 +17,19 @@ from typing import Any
 
 import pytest
 
-from basstler.environment import GitHubActionsVariable
-from basstler.locations import PathEnumeration
-from basstler.maintenance.git_commands import GitCommandRunner
+from basstler_domain_model.environment import (
+    GitHubActionsVariable,
+)
+from basstler_domain_model.locations import (
+    PathEnumeration,
+)
+from basstler_domain_model.git.commands import (
+    GitCommandRunner,
+)
 from basstler.release_version import (
     MalformedVersion,
     MergedPullRequest,
     PlannedRelease,
-    PullRequestJSONKey,
     PullRequestLabel,
     Release,
     ReleaseVersion,
@@ -153,10 +160,8 @@ def pull_request_json(number: int, *labels: str) -> dict[str, Any]:
     :return: The pull request as GitHub's ``commits/<sha>/pulls`` returns one.
     """
     return {
-        PullRequestJSONKey.NUMBER: number,
-        PullRequestJSONKey.LABELS: [
-            {PullRequestJSONKey.NAME: label} for label in labels
-        ],
+        RestJSONKey.NUMBER: number,
+        RestJSONKey.LABELS: [{RestJSONKey.NAME: label} for label in labels],
     }
 
 

@@ -34,7 +34,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from basstler.class_property import classproperty
+from basstler_domain_model.class_property import (
+    classproperty,
+)
 from basstler.render_common import TemplatePage, sanitize_http_url
 
 

@@ -29,10 +29,17 @@ from typing import Any
 
 import yaml
 
-from basstler.class_property import classproperty
+from basstler_domain_model.class_property import (
+    classproperty,
+)
 from basstler.locations import ProjectLocation
-from basstler.maintenance.git_commands import GitCommandRunner
-from basstler.repository import GitHubAddress, Repository
+from basstler_domain_model.git.commands import (
+    GitCommandRunner,
+)
+from basstler_domain_model.repository import (
+    GitHubAddress,
+    Repository,
+)
 from basstler.setup.steps import PersonalNotesSetting
 from basstler.standard_streams import StandardStreamHandler
 

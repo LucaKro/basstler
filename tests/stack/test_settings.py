@@ -12,7 +12,9 @@ from pathlib import Path
 
 import pytest
 
-from basstler.repository import Repository
+from basstler_domain_model.repository import (
+    Repository,
+)
 from basstler.stack.configuration import StackSetting
 from basstler.stack.exceptions import (
     AmbiguousForkRemoteError,

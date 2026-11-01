@@ -8,6 +8,8 @@ labelled ``release:minor`` or ``release:major``.
 
 from __future__ import annotations
 
+from basstler_domain_model.github.vocabulary import RestJSONKey
+
 import argparse
 import json
 import sys
@@ -16,10 +18,16 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
-from basstler.class_property import classproperty
-from basstler.exceptions import DataclassException
+from basstler_domain_model.class_property import (
+    classproperty,
+)
+from basstler_domain_model.exceptions import (
+    DataclassException,
+)
 from basstler.exit_codes import CommandFailure, ExitCode
-from basstler.maintenance.git_commands import GitCommandRunner
+from basstler_domain_model.git.commands import (
+    GitCommandRunner,
+)
 from basstler.standard_streams import StandardStreamHandler
 
 logger = StandardStreamHandler.logger_for(__name__)
@@ -116,16 +124,6 @@ class ReleaseOutputKey(StrEnum):
     """
 
 
-class PullRequestJSONKey(StrEnum):
-    """
-    The fields read out of GitHub's ``commits/<sha>/pulls`` response.
-    """
-
-    NUMBER = "number"
-    LABELS = "labels"
-    NAME = "name"
-
-
 @dataclass(frozen=True)
 class PullRequestLabel:
     """
@@ -143,7 +141,7 @@ class PullRequestLabel:
         :param data: A label object GitHub returned.
         :return: The parsed label.
         """
-        return cls(name=data[PullRequestJSONKey.NAME])
+        return cls(name=data[RestJSONKey.NAME])
 
     @property
     def part(self) -> VersionPart:
@@ -174,10 +172,9 @@ class MergedPullRequest:
         :return: The parsed pull request.
         """
         return cls(
-            number=data[PullRequestJSONKey.NUMBER],
+            number=data[RestJSONKey.NUMBER],
             labels=tuple(
-                PullRequestLabel.from_json(label)
-                for label in data[PullRequestJSONKey.LABELS]
+                PullRequestLabel.from_json(label) for label in data[RestJSONKey.LABELS]
             ),
         )
 

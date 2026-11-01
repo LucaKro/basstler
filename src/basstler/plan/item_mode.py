@@ -63,11 +63,17 @@ from pathlib import Path
 from typing import Any
 
 from basstler.bash import Bash
-from basstler.class_property import classproperty
-from basstler.exceptions import DataclassException
+from basstler_domain_model.class_property import (
+    classproperty,
+)
+from basstler_domain_model.exceptions import (
+    DataclassException,
+)
 from basstler.exit_codes import CommandFailure, ExitCode
-from basstler.locations import (
+from basstler_domain_model.environment import (
     ClaudeCodeVariable,
+)
+from basstler.locations import (
     PackageLocation,
     PluginLocation,
     ProjectLocation,

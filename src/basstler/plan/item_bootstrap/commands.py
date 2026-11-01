@@ -10,7 +10,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from basstler.class_property import classproperty
+from basstler_domain_model.class_property import (
+    classproperty,
+)
 from basstler.command_line import Command
 from basstler.plan.item_bootstrap.blockers import BranchReport, OwnedBlocker
 from basstler.plan.item_bootstrap.check import ItemCheckRequest, StalenessReport

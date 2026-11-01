@@ -13,8 +13,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from basstler.maintenance.git_commands import BranchAncestry, GitCommandRunner
-from basstler.maintenance.github import ForkPullRequests
+from basstler.maintenance.git_commands import (
+    BranchAncestry,
+)
+from basstler_domain_model.git.commands import (
+    GitCommandRunner,
+)
+from basstler_domain_model.github.repository_client import (
+    ForkPullRequests,
+)
 from basstler.maintenance.restack_steps import (
     BranchOutcome,
     BranchUnderRestack,

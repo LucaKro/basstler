@@ -18,8 +18,10 @@ from basstler.maintenance.fast_forward import FastForwardOutcome, FastForwardRep
 from basstler.maintenance.promotion import Promotion
 from basstler.maintenance.report import MaintenanceReport
 from basstler.maintenance.restack_steps import BranchOutcome, RestackOutcome
-from basstler.stack.model import (
+from basstler_domain_model.git.commands import (
     IntegrationStrategy,
+)
+from basstler.stack.model import (
     PullRequest,
     Reparent,
     SkippedPullRequest,
@@ -27,7 +29,9 @@ from basstler.stack.model import (
     Stack,
 )
 from basstler.stack.promotion_link import PromotionLink
-from basstler.upstream_reviews.vocabulary import RollupState
+from basstler_domain_model.github.vocabulary import (
+    RollupState,
+)
 
 from .fork import (
     A_SESSION_LINK,

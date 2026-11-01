@@ -8,13 +8,19 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
-from basstler.maintenance.board import PullRequestField
+from basstler_domain_model.github.pull_request_fields import (
+    PullRequestField,
+)
 from basstler.maintenance.description import (
     PullRequestDescription,
     UpstreamPullRequestLink,
 )
-from basstler.maintenance.github import ForkPullRequests
-from basstler.stack.label_write import LabelWrite
+from basstler_domain_model.github.repository_client import (
+    ForkPullRequests,
+)
+from basstler_domain_model.github.labels import (
+    LabelWrite,
+)
 from basstler.stack.model import Branch, BranchStatus, Stack
 
 

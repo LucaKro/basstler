@@ -10,9 +10,15 @@ from pathlib import Path
 
 import pytest
 
-from basstler.environment import GitHubCredentialVariable
-from basstler.maintenance.git_commands import GitCommandRunner
-from basstler.maintenance.github import GitHubRepository
+from basstler_domain_model.environment import (
+    GitHubCredentialVariable,
+)
+from basstler_domain_model.git.commands import (
+    GitCommandRunner,
+)
+from basstler_domain_model.github.repository_client import (
+    GitHubRepository,
+)
 from basstler.personal_notes.progress_notes import (
     BranchPullRequests,
     EmptyRemoteBranchListError,
@@ -22,7 +28,9 @@ from basstler.personal_notes.progress_notes import (
     ProgressNotesPruning,
     UnreadableRemoteError,
 )
-from basstler.repository import Repository
+from basstler_domain_model.repository import (
+    Repository,
+)
 
 from ..constants.notes import ProgressBranch
 from ..constants.paths import DatasetLocation

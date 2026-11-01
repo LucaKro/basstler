@@ -89,7 +89,7 @@
   - An exception raised only within one subpackage goes in that subpackage's `exceptions.py`; create the file if the subpackage has none
   - An exception raised across several subpackages goes in the `exceptions.py` of their nearest common package
 - Never use `assert` outside tests: Python drops it when run with `-O`, so the check silently disappears. Raise a custom exception instead
-- Custom exceptions subclass `basstler.exceptions.DataclassException`, implementing its `error_message` and `suggest_correction`
+- Custom exceptions subclass `basstler_domain_model.exceptions.DataclassException`, implementing its `error_message` and `suggest_correction`
 
 ### Constants and Class-Level Values
 - Never use global variables, module-level constants or `ClassVar`. Instead:
@@ -97,7 +97,7 @@
   - A default a caller may want to change is a parameter of the method that uses it if only that method does, otherwise a dataclass field with that default. For example, a `Heater` takes `target_temperature: float = 20.0` as a field instead of declaring `DEFAULT_TARGET_TEMPERATURE: ClassVar[float] = 20.0`
   - A constant that belongs to a class is a `classproperty`
   - `ClassVar` is allowed only for state that explicitly has to be shared and mutable across every instance of a class. This almost never applies
-- Use `basstler.class_property.classproperty`
+- Use `basstler_domain_model.class_property.classproperty`
 
 ### Structured Data
 - Structured data is the default over bare strings, hardcoded values and meaningless numbers: reach for the structured form first and justify the literal, never the other way round
@@ -107,7 +107,7 @@
 - Data whose shape someone else controls - an API response, a configuration file - is mirrored in dataclasses and parsed by a `from_json` classmethod, so the field names and the access path into the payload are written once
 - A tuple whose positions carry meaning becomes a dataclass, or an enum when the positions are a fixed set of alternatives rather than fields
 - A long literal document - a query, a template, a schema - lives in a file of its own type and is read in, never embedded as a string
-- A path enum subclasses `basstler.locations.PathEnumeration`, so every path derived from a member is a plain `Path`; its members' `name` is the path's last component, so read the member name as `_name_`
+- A path enum subclasses `basstler_domain_model.locations.PathEnumeration`, so every path derived from a member is a plain `Path`; its members' `name` is the path's last component, so read the member name as `_name_`
 
 ## Type Hints
 - Every parameter and return value has an accurate type hint, `Any` and `-> None` included
@@ -146,6 +146,7 @@
 - Every Python module lives in the `basstler` package under `src/`; the plugin under `plugin/` carries only its `SKILL.md` files, manifest and bash entry points, which call the installed package with `python -m basstler.<module>`
 - Name every file and directory once, in `basstler.locations`; every environment variable once, in `basstler.environment`
 - The package depends only on the libraries `pyproject.toml` lists. Code that comes from `krrood` is copied, never imported
+- GitHub's and git's data, and the clients that read and write them, live in `basstler_domain_model`; this package holds the workflows built on them
 
 ## Releases
 - No file carries the version: the release workflow tags the merge commit, and `hatch-vcs` reads the version from that tag

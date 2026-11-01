@@ -27,14 +27,23 @@ Commands::
 
 from __future__ import annotations
 
+from basstler_domain_model.github.exceptions import PullRequestReadError
+
 import argparse
 import sys
 from enum import StrEnum
 from pathlib import Path
 
 from basstler.exit_codes import ExitCode
-from basstler.maintenance.git_commands import GitCommandFailed, GitCommandRunner
-from basstler.repository import Repository
+from basstler_domain_model.git.exceptions import (
+    GitCommandFailed,
+)
+from basstler_domain_model.git.commands import (
+    GitCommandRunner,
+)
+from basstler_domain_model.repository import (
+    Repository,
+)
 from basstler.standard_streams import StandardStreamHandler
 from basstler.upstream_reviews.action.branch import (
     ActionInstallation,
@@ -44,12 +53,11 @@ from basstler.upstream_reviews.action.read import (
     ActionRead,
 )
 from basstler.upstream_reviews.action.run import ActionRun
-from basstler.upstream_reviews.clients import (
+from basstler_domain_model.github.clients import (
     GitHubCommandLineClient,
 )
 from basstler.upstream_reviews.exceptions import (
     ActionUnavailable,
-    UpstreamReadError,
 )
 from basstler.upstream_reviews.request import (
     UpstreamReadRequest,
@@ -196,7 +204,7 @@ def main(argv: list[str] | None = None) -> int:
     except ActionUnavailable as failure:
         logger.error(failure)
         return ActionExitCode.UNAVAILABLE
-    except (UpstreamReadError, GitCommandFailed) as failure:
+    except (PullRequestReadError, GitCommandFailed) as failure:
         logger.error(failure)
         return ActionExitCode.READ_FAILED
     return ActionExitCode.SUCCESS

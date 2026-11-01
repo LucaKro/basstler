@@ -6,7 +6,9 @@ from __future__ import annotations
 
 from enum import IntEnum, StrEnum
 
-from basstler.environment import EnvironmentVariable
+from basstler_domain_model.environment import (
+    EnvironmentVariable,
+)
 
 
 class ScrubbedEnvironmentPrefix(StrEnum):

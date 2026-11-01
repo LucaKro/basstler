@@ -8,7 +8,9 @@ import re
 from dataclasses import dataclass
 
 from basstler.maintenance.constants import DescriptionPattern, MaintenanceText
-from basstler.repository import Repository
+from basstler_domain_model.repository import (
+    Repository,
+)
 
 # %% the upstream pull request a description links to
 

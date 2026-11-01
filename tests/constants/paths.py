@@ -7,7 +7,13 @@ from __future__ import annotations
 from enum import StrEnum
 from pathlib import Path
 
-from basstler.locations import PackageLocation, PathEnumeration, ProjectLocation
+from basstler.locations import (
+    PackageLocation,
+    ProjectLocation,
+)
+from basstler_domain_model.locations import (
+    PathEnumeration,
+)
 
 
 class RepositoryLocation(PathEnumeration):

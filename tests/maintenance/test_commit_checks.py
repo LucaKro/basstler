@@ -10,14 +10,18 @@ from dataclasses import dataclass, field
 from http import HTTPStatus
 from typing import Any
 
-from basstler.maintenance.github import (
+from basstler_domain_model.github.repository_client import (
     CommitReport,
     GitHubRepository,
-    GitHubRequestFailed,
     ListingParameter,
     RepositoryPath,
 )
-from basstler.upstream_reviews.vocabulary import RollupState
+from basstler_domain_model.github.exceptions import (
+    GitHubRequestFailed,
+)
+from basstler_domain_model.github.vocabulary import (
+    RollupState,
+)
 
 from ..upstream_reviews.replay import RecordedRestResponse
 from ..upstream_reviews.test_rest import (

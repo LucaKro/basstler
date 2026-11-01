@@ -7,10 +7,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from basstler.class_property import classproperty
-from basstler.exceptions import DataclassException
+from basstler_domain_model.class_property import (
+    classproperty,
+)
+from basstler_domain_model.exceptions import (
+    DataclassException,
+)
 from basstler.exit_codes import CommandFailure, PersonalNotesSetupExitCode
-from basstler.repository import Repository
+from basstler_domain_model.repository import (
+    Repository,
+)
 
 
 @dataclass

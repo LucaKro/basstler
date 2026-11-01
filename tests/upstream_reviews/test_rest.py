@@ -19,15 +19,19 @@ from pathlib import Path
 
 import pytest
 
-from basstler.locations import ClaudeCodeVariable
-from basstler.repository import Repository
-from basstler.upstream_reviews.clients import (
+from basstler_domain_model.environment import (
+    ClaudeCodeVariable,
+)
+from basstler_domain_model.repository import (
+    Repository,
+)
+from basstler_domain_model.github.clients import (
     GitHubCommandLineClient,
 )
-from basstler.upstream_reviews.exceptions import (
+from basstler_domain_model.github.exceptions import (
     UpstreamPullRequestNotFound,
 )
-from basstler.upstream_reviews.readers import (
+from basstler_domain_model.github.readers import (
     ReadSource,
     RestPullRequestReader,
     UpstreamPullRequestReader,
@@ -36,10 +40,10 @@ from basstler.upstream_reviews.readers import (
 from basstler.upstream_reviews.report import (
     UpstreamPullRequestReport,
 )
-from basstler.upstream_reviews.rest_models import (
+from basstler_domain_model.github.rest_models import (
     RestPullRequestSummary,
 )
-from basstler.upstream_reviews.vocabulary import (
+from basstler_domain_model.github.vocabulary import (
     CheckOutcome,
     PullRequestState,
     RollupState,

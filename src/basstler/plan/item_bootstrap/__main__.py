@@ -9,7 +9,9 @@ import os
 import sys
 from pathlib import Path
 
-from basstler.locations import ClaudeCodeVariable
+from basstler_domain_model.environment import (
+    ClaudeCodeVariable,
+)
 from basstler.plan.item_bootstrap.commands import BootstrapCommand
 from basstler.plan.item_bootstrap.exceptions import BootstrapError
 from basstler.standard_streams import StandardStreamHandler

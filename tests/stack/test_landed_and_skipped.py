@@ -7,8 +7,10 @@ from __future__ import annotations
 
 import pytest
 
-from basstler.stack.model import (
+from basstler_domain_model.git.commands import (
     IntegrationStrategy,
+)
+from basstler.stack.model import (
     PullRequest,
     Reparent,
     RestackPlanEntry,

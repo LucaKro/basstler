@@ -13,7 +13,9 @@ from pathlib import Path
 
 from basstler.environment import OperatingSystemVariable
 from basstler.exceptions import BashNotFoundError
-from basstler.locations import ClaudeCodeVariable
+from basstler_domain_model.environment import (
+    ClaudeCodeVariable,
+)
 
 # %% the programs searched for
 

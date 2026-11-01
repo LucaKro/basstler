@@ -15,7 +15,13 @@ from basstler.exceptions import InvalidSchemaVersion, PlanValidationError
 from basstler.plan.dependencies import PlanDirectory
 from basstler.plan.model import ItemStatus, ManifestKey
 from basstler.plan.validation import PlanValidator
-from basstler.pull_request_state import LiveState, PullRequestRecord, PullRequestState
+from basstler.pull_request_state import (
+    LiveState,
+    PullRequestRecord,
+)
+from basstler_domain_model.github.vocabulary import (
+    PullRequestState,
+)
 from basstler.plan.check_dependency_readiness import (
     DependencyReadiness,
     ReadinessField,

@@ -22,7 +22,9 @@ from pathlib import Path
 
 from .script_runner import BashScriptRunner
 from basstler.locations import PackageLocation, PluginLocation
-from basstler.maintenance.git_commands import GitCommandRunner
+from basstler_domain_model.git.commands import (
+    GitCommandRunner,
+)
 from basstler.shell_configuration import ShellConfigurationFunction
 
 from .constants.environment import (

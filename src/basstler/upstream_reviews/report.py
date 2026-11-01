@@ -10,10 +10,10 @@ from enum import StrEnum
 from basstler.upstream_reviews.failure_logs import (
     FailureLog,
 )
-from basstler.upstream_reviews.pull_request_models import (
+from basstler_domain_model.github.pull_request_models import (
     UpstreamPullRequestSnapshot,
 )
-from basstler.upstream_reviews.review_models import (
+from basstler_domain_model.github.review_models import (
     ReviewThread,
 )
 

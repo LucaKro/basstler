@@ -29,7 +29,9 @@ from basstler.setup.steps import (
 )
 
 from basstler.locations import PluginLocation
-from basstler.repository import Repository
+from basstler_domain_model.repository import (
+    Repository,
+)
 
 from ..constants.environment import ScrubbedEnvironmentPrefix
 from ..constants.paths import RepositoryLocation
@@ -182,10 +184,10 @@ def test_each_label_carries_the_description_it_is_created_with() -> None:
     Every label says what it means, and the creation command names the fork.
     """
     for label in GitHubLabel:
-        assert label.purpose
+        assert label.description
         assert label.creation_command(FORK) == (
             f"gh label create {label.value} --repo {FORK.full_name} "
-            f'--description "{label.purpose}"'
+            f'--description "{label.description}"'
         )
 
 

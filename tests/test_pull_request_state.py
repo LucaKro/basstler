@@ -13,15 +13,21 @@ from basstler.pull_request_state import (
     MalformedPullRequestDataError,
     MissingMergeTimestampError,
     PullRequestRecord,
+)
+from basstler_domain_model.github.vocabulary import (
     PullRequestState,
 )
 from basstler.github_labels import GitHubLabel
-from basstler.maintenance.board import PullRequestField
+from basstler_domain_model.github.pull_request_fields import (
+    PullRequestField,
+)
 from basstler.maintenance.description import (
     PullRequestDescription,
     UpstreamPullRequestLink,
 )
-from basstler.repository import Repository
+from basstler_domain_model.repository import (
+    Repository,
+)
 
 from .constants.paths import DatasetLocation
 from .constants.stack import StackLabel

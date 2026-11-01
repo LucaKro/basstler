@@ -13,8 +13,12 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
-from basstler.environment import GitHubCredentialVariable
-from basstler.maintenance.board import PullRequestField
+from basstler_domain_model.environment import (
+    GitHubCredentialVariable,
+)
+from basstler_domain_model.github.pull_request_fields import (
+    PullRequestField,
+)
 from basstler.plan.item_bootstrap.documents import PlanDocuments, ProjectCheckout
 from basstler.plan.item_bootstrap.exceptions import (
     BranchAlreadyPublishedError,
@@ -27,7 +31,11 @@ from basstler.plan.model import (
     ItemStatus,
     ManifestKey,
 )
-from basstler.repository import GitHubAddress, PullRequestReference, Repository
+from basstler_domain_model.repository import (
+    GitHubAddress,
+    PullRequestReference,
+    Repository,
+)
 
 # %% opening the work
 

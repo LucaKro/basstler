@@ -12,7 +12,9 @@ from typing import TYPE_CHECKING, Any
 from basstler.plan.model import ItemStatus, ManifestKey
 from basstler.pull_request_state import LiveState
 from basstler.render_common import sanitize_http_url
-from basstler.repository import GitHubAddress
+from basstler_domain_model.repository import (
+    GitHubAddress,
+)
 
 if TYPE_CHECKING:
     from basstler.dashboard.cards import DependencyChip, ItemAction

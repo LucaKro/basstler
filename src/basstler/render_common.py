@@ -20,7 +20,9 @@ import jinja2
 import markdown as markdown_library
 import nh3
 
-from basstler.class_property import classproperty
+from basstler_domain_model.class_property import (
+    classproperty,
+)
 from basstler.locations import PackageLocation
 
 

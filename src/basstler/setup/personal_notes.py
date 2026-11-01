@@ -25,18 +25,30 @@ from enum import StrEnum
 from pathlib import Path
 
 from basstler.bash import Bash
-from basstler.class_property import classproperty
+from basstler_domain_model.class_property import (
+    classproperty,
+)
 from basstler.email_address import EmailAddress
-from basstler.environment import GitHubCredentialVariable
+from basstler_domain_model.environment import (
+    GitHubCredentialVariable,
+)
 from basstler.exceptions import MalformedEmailAddressError
-from basstler.exit_codes import CommandFailure, PersonalNotesSetupExitCode
+from basstler.exit_codes import (
+    CommandFailure,
+    DomainModelFailure,
+    PersonalNotesSetupExitCode,
+)
 from basstler.github_labels import GitHubLabel
-from basstler.locations import (
+from basstler_domain_model.environment import (
     ClaudeCodeVariable,
+)
+from basstler.locations import (
     PluginLocation,
     PluginSkillLocation,
 )
-from basstler.maintenance.github import GitHubRepository
+from basstler_domain_model.github.repository_client import (
+    GitHubRepository,
+)
 from basstler.plugin_root import PluginRoot
 from basstler.setup.exceptions import ForeignNotesRemoteError, HookScriptFailedError
 from basstler.setup.report import CheckStatus, SetupCheck, SetupReport
@@ -440,6 +452,9 @@ def main(arguments: Sequence[str] | None = None) -> int:
     except CommandFailure as failure:
         logger.error(failure)
         return failure.exit_code
+    except DomainModelFailure.errors as failure:
+        logger.error(failure)
+        return DomainModelFailure.exit_code_of(failure)
 
 
 if __name__ == "__main__":

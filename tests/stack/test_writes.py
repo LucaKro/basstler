@@ -15,11 +15,15 @@ from basstler.stack.commit_move import (
     ProposedCommitMove,
     RefusalReason,
 )
-from basstler.stack.exceptions import (
+from basstler_domain_model.github.exceptions import (
     ContradictoryLabelWriteError,
+)
+from basstler.stack.exceptions import (
     PromotionLinkTooLongError,
 )
-from basstler.stack.label_write import LabelWrite
+from basstler_domain_model.github.labels import (
+    LabelWrite,
+)
 from basstler.stack.promotion_link import PromotionLink, PromotionLinkParameter
 
 from ..constants.stack import RemoteName, StackBranch, StackLabel

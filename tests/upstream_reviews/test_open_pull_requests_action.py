@@ -9,11 +9,17 @@ import json
 import pytest
 
 import basstler.upstream_reviews.action.__main__
-from basstler.locations import ClaudeCodeVariable
+from basstler_domain_model.environment import (
+    ClaudeCodeVariable,
+)
 from basstler.maintenance.board import UpstreamPullRequests
 from basstler.maintenance.commands import MaintenancePass
-from basstler.maintenance.git_commands import GitCommandRunner
-from basstler.maintenance.github import GitHubRepository
+from basstler_domain_model.git.commands import (
+    GitCommandRunner,
+)
+from basstler_domain_model.github.repository_client import (
+    GitHubRepository,
+)
 from basstler.maintenance.upstream_action import (
     OpenPullRequestsAnswer,
     OpenPullRequestsRequest,

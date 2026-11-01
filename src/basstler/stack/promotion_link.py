@@ -8,7 +8,9 @@ from dataclasses import dataclass
 from enum import StrEnum
 from urllib.parse import quote
 
-from basstler.class_property import classproperty
+from basstler_domain_model.class_property import (
+    classproperty,
+)
 from basstler.stack.exceptions import PromotionLinkTooLongError
 from basstler.stack.settings import Configuration
 from basstler.standard_streams import StandardStreamHandler

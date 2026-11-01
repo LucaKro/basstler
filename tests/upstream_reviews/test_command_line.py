@@ -13,19 +13,25 @@ from pathlib import Path
 
 import pytest
 
-from basstler.exceptions import DataclassException
+from basstler_domain_model.exceptions import (
+    DataclassException,
+)
 from basstler.locations import ProjectLocation
-from basstler.repository import Repository
+from basstler_domain_model.repository import (
+    Repository,
+)
 from basstler.stack.configuration import CommittedStackConfiguration
 from basstler.upstream_reviews.__main__ import (
     main,
     resolve_upstream_repository,
 )
-from basstler.upstream_reviews.clients import (
+from basstler_domain_model.github.clients import (
     GitHubCommandLineClient,
 )
 from basstler.upstream_reviews.exceptions import (
     UpstreamReadError,
+)
+from basstler_domain_model.github.exceptions import (
     GitHubCommandFailed,
     GraphQLErrorsReturned,
     UpstreamPullRequestNotFound,
@@ -37,24 +43,24 @@ from basstler.upstream_reviews.failure_logs import (
     LogFormatting,
     LogMarker,
 )
-from basstler.upstream_reviews.pull_request_models import (
+from basstler_domain_model.github.pull_request_models import (
     CheckResult,
     CheckStatus,
     PullRequest,
     UpstreamPullRequestSnapshot,
 )
-from basstler.upstream_reviews.readers import (
+from basstler_domain_model.github.readers import (
     UpstreamPullRequestReader,
 )
 from basstler.upstream_reviews.report import (
     ReportText,
     UpstreamPullRequestReport,
 )
-from basstler.upstream_reviews.review_models import (
+from basstler_domain_model.github.review_models import (
     PageInfo,
     ReviewThread,
 )
-from basstler.upstream_reviews.vocabulary import (
+from basstler_domain_model.github.vocabulary import (
     CheckOutcome,
     JSONModel,
     PullRequestJSONKey,

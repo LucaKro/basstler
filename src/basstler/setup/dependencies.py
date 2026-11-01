@@ -36,7 +36,9 @@ from importlib.metadata import PackageNotFoundError, distribution, distributions
 from pathlib import Path
 from typing import Any
 
-from basstler.class_property import classproperty
+from basstler_domain_model.class_property import (
+    classproperty,
+)
 from basstler.exit_codes import CommandFailure, ExitCode
 from basstler.locations import PackageLocation
 from basstler.standard_streams import StandardStreamHandler

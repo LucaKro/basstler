@@ -14,7 +14,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from basstler.class_property import classproperty
+from basstler_domain_model.class_property import (
+    classproperty,
+)
 from basstler.dashboard.cards import (
     DependencyChip,
     ItemAction,
@@ -44,7 +46,9 @@ from basstler.render_common import (
     render_markdown_to_html,
     sanitize_http_url,
 )
-from basstler.repository import GitHubAddress
+from basstler_domain_model.repository import (
+    GitHubAddress,
+)
 from basstler.standard_streams import StandardStreamHandler
 
 logger = StandardStreamHandler.logger_for(__name__)

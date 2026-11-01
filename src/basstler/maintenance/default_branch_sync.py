@@ -10,14 +10,21 @@ from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 
-from basstler.exit_codes import CommandFailure
+from basstler.exit_codes import CommandFailure, DomainModelFailure
 from basstler.maintenance.fast_forward import (
     FastForwardOutcome,
     ForkBaseFastForward,
     RefusedPushHandling,
 )
-from basstler.maintenance.git_commands import GitCommandRunner
-from basstler.repository import MalformedRepositoryError, Repository
+from basstler_domain_model.git.commands import (
+    GitCommandRunner,
+)
+from basstler_domain_model.exceptions import (
+    MalformedRepositoryError,
+)
+from basstler_domain_model.repository import (
+    Repository,
+)
 from basstler.stack.settings import Configuration
 from basstler.stack.configuration import (
     CommittedStackConfiguration,
@@ -317,7 +324,11 @@ class DefaultBranchSync:
             except MissingUpstreamRepositoryError:
                 source = BaseSource.own_remote_of(project_root, git)
             return cls(source, git).run()
-        except (CommandFailure, MalformedRepositoryError) as refusal:
+        except (
+            CommandFailure,
+            *DomainModelFailure.errors,
+            MalformedRepositoryError,
+        ) as refusal:
             return DefaultBranchReport(BaseOutcome.NOT_SYNCED, reason=str(refusal))
 
     @property

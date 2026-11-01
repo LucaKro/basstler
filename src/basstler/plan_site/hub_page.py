@@ -7,7 +7,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from basstler.dashboard.index_page import PlanSummary, ProgressCard
-from basstler.class_property import classproperty
+from basstler_domain_model.class_property import (
+    classproperty,
+)
 from basstler.render_common import TemplatePage
 
 

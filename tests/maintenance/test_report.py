@@ -11,11 +11,17 @@ from dataclasses import asdict
 
 import pytest
 
-from basstler.exceptions import UnresolvableReferenceError
-from basstler.exit_codes import StackExitCode
-from basstler.repository import Repository
-from basstler.stack.model import (
+from basstler_domain_model.git.exceptions import (
+    UnresolvableReferenceError,
+)
+from basstler.exit_codes import DomainModelFailure, StackExitCode
+from basstler_domain_model.repository import (
+    Repository,
+)
+from basstler_domain_model.git.commands import (
     IntegrationStrategy,
+)
+from basstler.stack.model import (
     PullRequest,
     SkippedPullRequest,
     SkipReason,
@@ -241,7 +247,10 @@ def test_comparing_against_a_reference_git_cannot_resolve_names_that_reference(
         )
 
     assert raised.value.reference == missing
-    assert raised.value.exit_code == StackExitCode.GIT_COMMAND_FAILED
+    assert (
+        DomainModelFailure.exit_code_of(raised.value)
+        == StackExitCode.GIT_COMMAND_FAILED
+    )
 
 
 @pytest.mark.parametrize(

@@ -16,7 +16,9 @@ import pytest
 from basstler.bash import Bash, LocatedProgram
 from basstler.environment import OperatingSystemVariable
 from basstler.exceptions import BashNotFoundError
-from basstler.locations import ClaudeCodeVariable
+from basstler_domain_model.environment import (
+    ClaudeCodeVariable,
+)
 
 from .constants.environment import FileMode
 

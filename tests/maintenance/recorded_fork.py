@@ -16,14 +16,22 @@ from basstler.stack.model import (
 )
 
 from basstler.locations import RepositoryStateLocation
-from basstler.maintenance.board import PullRequestField
+from basstler_domain_model.github.pull_request_fields import (
+    PullRequestField,
+)
 from basstler.maintenance.commands import (
     MaintenanceCommand,
     MaintenancePass,
 )
-from basstler.environment import GitHubCredentialVariable
-from basstler.maintenance.git_commands import GitCommandRunner
-from basstler.maintenance.github import ForkPullRequests
+from basstler_domain_model.environment import (
+    GitHubCredentialVariable,
+)
+from basstler_domain_model.git.commands import (
+    GitCommandRunner,
+)
+from basstler_domain_model.github.repository_client import (
+    ForkPullRequests,
+)
 
 from ..script_runner import PythonModuleRunner
 

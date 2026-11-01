@@ -5,12 +5,13 @@ waits through.
 
 from __future__ import annotations
 
-from basstler.stack.model import (
+from basstler_domain_model.git.commands import (
     IntegrationStrategy,
+)
+from basstler.stack.model import (
     PullRequest,
 )
 
-from basstler.maintenance.git_commands import ProposedPush
 from basstler.maintenance.restack_procedure import restack
 from basstler.maintenance.restack_steps import (
     BranchOutcome,
@@ -336,8 +337,7 @@ def test_replacing_a_merge_never_overwrites_a_push_the_pass_did_not_see(
 
 
 def test_replacing_superseded_merges_authorises_rewriting_published_history():
-    replacing = ProposedPush.publishing(
-        make_configuration(),
+    replacing = make_configuration().propose_push(
         "a-branch",
         IntegrationStrategy.MERGE,
         replaces_superseded_merges=True,

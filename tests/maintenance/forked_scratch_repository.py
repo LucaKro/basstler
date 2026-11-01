@@ -18,7 +18,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from basstler.locations import ProjectLocation
-from basstler.repository import Repository
+from basstler_domain_model.repository import (
+    Repository,
+)
 
 from ..constants.notes import ScratchBranch
 from ..constants.paths import PersonalNotesPath

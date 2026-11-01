@@ -18,11 +18,14 @@ from pathlib import Path
 from typing import Any
 
 from basstler.github_labels import GitHubLabel
-from basstler.repository import Repository
+from basstler_domain_model.git.commands import IntegrationStrategy
+from basstler_domain_model.repository import Repository
 from basstler.stack.checkout import CurrentCheckout, LandedBranches
 from basstler.stack.exceptions import BoardUnavailable
 from basstler.stack.settings import Configuration
-from basstler.upstream_reviews.vocabulary import RollupState
+from basstler_domain_model.github.vocabulary import (
+    RollupState,
+)
 
 # %% domain model
 
@@ -61,18 +64,6 @@ class BranchStatus(StrEnum):
         if in_review:
             return cls.IN_REVIEW
         return cls.DRAFT if draft else cls.READY
-
-
-class IntegrationStrategy(StrEnum):
-    """How a branch integrates its parent's moved tip during a restack."""
-
-    MERGE = "merge"
-    """Merge the parent's tip in, replacing the merges earlier restacks left that only
-    brought in an older state of the parent, so the branch carries one such merge."""
-
-    REBASE = "rebase"
-    """Replay the branch onto the parent's tip, which rewrites published history and is
-    authorised only by the branch's own rebase label."""
 
 
 class SkipReason(StrEnum):
@@ -191,7 +182,12 @@ class Branch:
     """Lifecycle status."""
 
     strategy: IntegrationStrategy
-    """Integration strategy onto the parent."""
+    """
+    How the branch takes in its parent's moved tip: a merge replaces the merges earlier
+    restacks left that only brought in an older state of the parent, so the branch
+    carries one such merge; a rebase rewrites published history, and is authorised only
+    by the branch's own rebase label.
+    """
 
     labels: list[str]
     """Labels carried by the pull request."""

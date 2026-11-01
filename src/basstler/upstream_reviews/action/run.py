@@ -8,7 +8,9 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from basstler.maintenance.github import GitHubRepository
+from basstler_domain_model.github.repository_client import (
+    GitHubRepository,
+)
 from basstler.maintenance.upstream_action import (
     OpenPullRequestsAnswer,
     OpenPullRequestsRequest,
@@ -19,7 +21,9 @@ from basstler.upstream_reviews.action.exchange import (
     ActionRequestKind,
 )
 from basstler.upstream_reviews.action.recording import ActionResult
-from basstler.upstream_reviews.clients import GitHubCommandLineClient
+from basstler_domain_model.github.clients import (
+    GitHubCommandLineClient,
+)
 from basstler.upstream_reviews.request import UpstreamReadRequest
 
 # %% the run

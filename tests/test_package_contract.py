@@ -21,7 +21,13 @@ from pathlib import Path
 
 import pytest
 
-from basstler.locations import ClaudeCodeVariable, PackageLocation, PluginLocation
+from basstler_domain_model.environment import (
+    ClaudeCodeVariable,
+)
+from basstler.locations import (
+    PackageLocation,
+    PluginLocation,
+)
 
 from basstler.package_layout import (
     PackageModule,

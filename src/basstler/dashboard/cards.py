@@ -11,7 +11,9 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
-from basstler.class_property import classproperty
+from basstler_domain_model.class_property import (
+    classproperty,
+)
 
 if TYPE_CHECKING:
     from basstler.dashboard.plan import Item, Track, Wave

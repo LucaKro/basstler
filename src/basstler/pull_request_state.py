@@ -17,10 +17,15 @@ from enum import StrEnum
 from typing import Any
 
 from basstler.github_labels import GitHubLabel
-from basstler.maintenance.board import PullRequestField
-from basstler.maintenance.board import PullRequestRecord as PullRequestAPIRecord
+from basstler_domain_model.github.pull_request_fields import (
+    PullRequestField,
+    PullRequestPayload,
+)
+from basstler_domain_model.github.vocabulary import PullRequestState
 from basstler.maintenance.description import PullRequestDescription
-from basstler.repository import Repository
+from basstler_domain_model.repository import (
+    Repository,
+)
 
 
 # %% classified state
@@ -93,15 +98,6 @@ class LiveState(StrEnum):
         if pull_request.draft:
             return LiveState.OPEN_DRAFT
         return LiveState.OPEN_READY
-
-
-class PullRequestState(StrEnum):
-    """
-    GitHub's own coarse-grained pull request state, as returned by its API.
-    """
-
-    OPEN = "open"
-    CLOSED = "closed"
 
 
 # %% pr_data.json records
@@ -204,7 +200,7 @@ class PullRequestRecord:
         )
 
     @classmethod
-    def from_api(cls, api_record: PullRequestAPIRecord) -> PullRequestRecord:
+    def from_api(cls, api_record: PullRequestPayload) -> PullRequestRecord:
         """
         Read one pull request object as the REST pulls API answers it.
 

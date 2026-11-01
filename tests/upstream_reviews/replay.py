@@ -14,13 +14,15 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
 
-from basstler.repository import Repository
-from basstler.upstream_reviews.clients import (
+from basstler_domain_model.repository import (
+    Repository,
+)
+from basstler_domain_model.github.clients import (
     GraphQLClient,
     JobLogReader,
     RestClient,
 )
-from basstler.upstream_reviews.pull_request_models import (
+from basstler_domain_model.github.pull_request_models import (
     ReviewThreadsPageResult,
 )
 

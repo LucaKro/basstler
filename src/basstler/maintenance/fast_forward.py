@@ -10,7 +10,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
-from basstler.maintenance.git_commands import GitCommandRunner, ProposedPush
+from basstler_domain_model.git.commands import (
+    GitCommandRunner,
+    ProposedPush,
+)
 from basstler.stack.settings import Configuration
 
 

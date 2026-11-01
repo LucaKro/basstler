@@ -14,20 +14,28 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
-from basstler.class_property import classproperty
-from basstler.repository import Repository
+from basstler_domain_model.class_property import (
+    classproperty,
+)
+from basstler_domain_model.repository import (
+    Repository,
+)
 from basstler.upstream_reviews.action.exchange import (
     ActionRequest,
     ActionRequestKind,
 )
-from basstler.upstream_reviews.clients import JobLogReader
+from basstler_domain_model.github.clients import (
+    JobLogReader,
+)
 from basstler.upstream_reviews.exceptions import (
     NoRecordedReadRequest,
 )
 from basstler.upstream_reviews.failure_logs import FailureLogReader
-from basstler.upstream_reviews.readers import PullRequestSource
+from basstler_domain_model.github.readers import (
+    PullRequestSource,
+)
 from basstler.upstream_reviews.report import UpstreamPullRequestReport
-from basstler.upstream_reviews.vocabulary import (
+from basstler_domain_model.github.vocabulary import (
     JSONModel,
 )
 

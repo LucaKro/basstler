@@ -17,7 +17,8 @@ from enum import StrEnum
 from pathlib import Path
 
 from basstler.locations import PackageLocation, ProjectLocation
-from basstler.repository import Repository
+from basstler_domain_model.git.commands import IntegrationStrategy, ProposedPush
+from basstler_domain_model.repository import Repository
 from basstler.shell_configuration import (
     FetchedBranchReference,
     ShellConfigurationFunction,
@@ -359,6 +360,30 @@ class Configuration:
         """:param name: A branch or parent name.
         :return: Its reference on the fork remote."""
         return f"{self.fork_remote}/{name}"
+
+    def propose_push(
+        self,
+        branch: str,
+        strategy: IntegrationStrategy,
+        replaces_superseded_merges: bool = False,
+    ) -> ProposedPush:
+        """
+        Build the push that publishes a restacked branch to the fork.
+
+        :param branch: The branch to publish.
+        :param strategy: How its parent was integrated, which authorises a rewrite when
+            it is a rebase - and which ``Stack.build`` sets to rebase only from the label.
+        :param replaces_superseded_merges: Whether the integration replaced merges that
+            only brought in an earlier state of the parent, the one rewrite a merge is
+            authorised to make.
+        :return: The push.
+        """
+        return ProposedPush(
+            remote=self.fork_remote,
+            refspec=f"{branch}:{branch}",
+            with_lease=strategy is IntegrationStrategy.REBASE
+            or replaces_superseded_merges,
+        )
 
     def print_settings(self) -> None:
         """

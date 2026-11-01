@@ -24,7 +24,9 @@ from basstler.maintenance.report import MaintenanceReport
 from basstler.maintenance.restack_steps import BranchOutcome, RestackOutcome
 from basstler.render_common import AllowedUrlScheme
 from basstler.stack.model import Branch, BranchStatus, Stack
-from basstler.upstream_reviews.vocabulary import RollupState
+from basstler_domain_model.github.vocabulary import (
+    RollupState,
+)
 
 # %% vocabulary
 

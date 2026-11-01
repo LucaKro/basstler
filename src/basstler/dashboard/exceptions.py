@@ -6,7 +6,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from basstler.exceptions import DataclassException
+from basstler_domain_model.exceptions import (
+    DataclassException,
+)
 
 # %% merging a refresh's summaries
 

@@ -27,12 +27,16 @@ from basstler.pull_request_state import (
     LiveState,
     PullRequestRecord,
     PullRequestsByRepository,
+)
+from basstler_domain_model.github.vocabulary import (
     PullRequestState,
 )
 from basstler.dashboard.publication import DashboardArtifact, PublicationField
 from basstler.github_labels import GitHubLabel
 from basstler.maintenance.description import UpstreamPullRequestLink
-from basstler.repository import Repository
+from basstler_domain_model.repository import (
+    Repository,
+)
 from basstler.locations import DashboardArtifactFile
 
 from ..constants.paths import DatasetLocation, RepositoryLocation, SkillDirectory

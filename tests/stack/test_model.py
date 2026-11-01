@@ -20,11 +20,15 @@ from basstler.locations import RepositoryStateLocation
 from basstler.stack.model import (
     BoardKey,
     BranchStatus,
-    IntegrationStrategy,
     PullRequest,
     RestackPlanEntry,
 )
-from basstler.upstream_reviews.vocabulary import RollupState
+from basstler_domain_model.git.commands import (
+    IntegrationStrategy,
+)
+from basstler_domain_model.github.vocabulary import (
+    RollupState,
+)
 
 from ..constants.stack import StackBranch, StackLabel
 

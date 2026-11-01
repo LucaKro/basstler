@@ -5,7 +5,9 @@ labels, comments and its description.
 
 from __future__ import annotations
 
-from basstler.maintenance.constants import MergeableState
+from basstler_domain_model.github.vocabulary import (
+    MergeableState,
+)
 from basstler.maintenance.restack_procedure import restack
 from basstler.maintenance.restack_steps import RestackOutcome
 

@@ -8,7 +8,9 @@ import json
 from dataclasses import asdict, dataclass
 from enum import StrEnum
 
-from basstler.class_property import classproperty
+from basstler_domain_model.class_property import (
+    classproperty,
+)
 from basstler.stack.checkout import CurrentCheckout, GitArgument, MergeTreeStatus
 from basstler.stack.model import Branch, BranchStatus, Stack
 from basstler.standard_streams import StandardStreamHandler

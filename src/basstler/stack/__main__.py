@@ -42,16 +42,27 @@ from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 
-from basstler.exit_codes import CommandFailure, ExitCode, StackExitCode
+from basstler.exit_codes import (
+    CommandFailure,
+    DomainModelFailure,
+    ExitCode,
+    StackExitCode,
+)
 from basstler.locations import RepositoryStateLocation
-from basstler.maintenance.git_commands import GitCommandRunner
-from basstler.repository import Repository
+from basstler_domain_model.git.commands import (
+    GitCommandRunner,
+)
+from basstler_domain_model.repository import (
+    Repository,
+)
 from basstler.stack.commit_move import (
     CommitMoveAction,
     CommitMoveChecks,
     ProposedCommitMove,
 )
-from basstler.stack.label_write import LabelWrite
+from basstler_domain_model.github.labels import (
+    LabelWrite,
+)
 from basstler.stack.model import Stack
 from basstler.stack.promotion_link import PromotionLink
 from basstler.stack.report import StackReport
@@ -297,6 +308,9 @@ class StackCommandLine:
         except CommandFailure as error:
             logger.error(f"{error}")
             return error.exit_code
+        except DomainModelFailure.errors as error:
+            logger.error(f"{error}")
+            return DomainModelFailure.exit_code_of(error)
 
     @staticmethod
     def _run_without_a_board(
@@ -309,9 +323,12 @@ class StackCommandLine:
         :return: The process exit code.
         """
         if command is Command.LABELS:
-            LabelWrite.replacing(
+            # One per line rather than a separator-joined list, because a label may
+            # contain any character a separator could be.
+            for label in LabelWrite.replacing(
                 arguments.current, arguments.add, arguments.remove
-            ).print_labels()
+            ).labels:
+                logger.info(label)
             return StackExitCode.SUCCESS
         if command is Command.CONFIGURATION:
             Configuration.load(

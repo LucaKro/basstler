@@ -1,5 +1,6 @@
 """
-Every error reading an upstream pull request can end in, whichever way it is read.
+Every error reading an upstream pull request through the fork's Action or a helper
+session can end in.
 """
 
 from __future__ import annotations
@@ -8,103 +9,20 @@ from abc import ABC
 from dataclasses import dataclass
 from pathlib import Path
 
-from basstler.exceptions import DataclassException
-from basstler.repository import Repository
+from basstler_domain_model.github.exceptions import PullRequestReadError
+from basstler_domain_model.repository import (
+    Repository,
+)
 from basstler.upstream_reviews.vocabulary import ActionBranch, ActionFile
 
 # %% errors
 
 
-class UpstreamReadError(DataclassException, ABC):
+class UpstreamReadError(PullRequestReadError, ABC):
     """
-    Base class for every failure reading an upstream pull request.
+    Base class for every failure reading an upstream pull request through the fork's
+    Action or a helper session.
     """
-
-
-@dataclass
-class GitHubCommandFailed(UpstreamReadError):
-    """
-    Raised when the ``gh`` invocation itself exits non-zero.
-    """
-
-    executable: str
-    """
-    The command that was run.
-    """
-
-    exit_code: int
-    """
-    The status it exited with.
-    """
-
-    error_output: str
-    """
-    Whatever it wrote to standard error.
-    """
-
-    def error_message(self) -> str:
-        return f"{self.executable} exited {self.exit_code}: {self.error_output}"
-
-    def suggest_correction(self) -> str:
-        return (
-            "Check that gh is installed and logged in with read access to the "
-            "upstream: gh auth status"
-        )
-
-
-@dataclass
-class GraphQLErrorsReturned(UpstreamReadError):
-    """
-    Raised when GitHub answers with an ``errors`` array instead of data.
-    """
-
-    messages: list[str]
-    """
-    Every message GitHub reported.
-    """
-
-    def error_message(self) -> str:
-        return "GitHub answered with errors: " + "; ".join(self.messages)
-
-    def suggest_correction(self) -> str:
-        return (
-            "Check that the upstream repository and pull request exist and that the "
-            "logged-in account can read them"
-        )
-
-
-@dataclass
-class UpstreamPullRequestNotFound(UpstreamReadError):
-    """
-    Raised when a branch has no pull request open on the upstream.
-    """
-
-    branch: str
-    """
-    The fork branch that was looked up.
-    """
-
-    upstream: Repository
-    """
-    The repository that was searched.
-    """
-
-    fork_owner: str
-    """
-    The owner whose head branches were being claimed.
-    """
-
-    def error_message(self) -> str:
-        return (
-            f"no pull request on {self.upstream} has head "
-            f"'{self.fork_owner}:{self.branch}'"
-        )
-
-    def suggest_correction(self) -> str:
-        return (
-            "The branch has most likely not been promoted upstream yet; read it once "
-            "its upstream pull request is open"
-        )
 
 
 # %% reading through a helper session

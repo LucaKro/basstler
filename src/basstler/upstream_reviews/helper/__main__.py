@@ -23,6 +23,8 @@ Two commands, run around the helper session::
 
 from __future__ import annotations
 
+from basstler_domain_model.github.exceptions import PullRequestReadError
+
 import argparse
 import ast
 import json
@@ -34,12 +36,13 @@ from pathlib import Path
 from typing import Any
 
 from basstler.upstream_reviews.helper import fetch
-from basstler.class_property import classproperty
-from basstler.repository import Repository
-from basstler.standard_streams import StandardStreamHandler
-from basstler.upstream_reviews.exceptions import (
-    UpstreamReadError,
+from basstler_domain_model.class_property import (
+    classproperty,
 )
+from basstler_domain_model.repository import (
+    Repository,
+)
+from basstler.standard_streams import StandardStreamHandler
 from basstler.upstream_reviews.failure_logs import (
     FailedJob,
 )
@@ -50,13 +53,13 @@ from basstler.upstream_reviews.helper.recording import (
     RecordedJobLog,
     SessionTranscript,
 )
-from basstler.upstream_reviews.readers import (
+from basstler_domain_model.github.readers import (
     UpstreamRestRoute,
 )
 from basstler.upstream_reviews.request import (
     UpstreamReadRequest,
 )
-from basstler.upstream_reviews.vocabulary import (
+from basstler_domain_model.github.vocabulary import (
     CheckOutcome,
 )
 
@@ -276,7 +279,7 @@ def main(argv: list[str] | None = None) -> int:
             request.identifier, SessionTranscript.current().chunks(request.identifier)
         )
         logger.info(recording.report(request, arguments.include_resolved))
-    except UpstreamReadError as failure:
+    except PullRequestReadError as failure:
         logger.error(failure)
         return 1
     return 0

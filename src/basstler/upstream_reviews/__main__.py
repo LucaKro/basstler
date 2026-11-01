@@ -18,24 +18,27 @@ script works unchanged in any contributor's fork.
 
 from __future__ import annotations
 
+from basstler_domain_model.github.exceptions import PullRequestReadError
+
 import argparse
 import sys
 from pathlib import Path
 
-from basstler.environment import GitHubActionsVariable
-from basstler.repository import Repository
+from basstler_domain_model.environment import (
+    GitHubActionsVariable,
+)
+from basstler_domain_model.repository import (
+    Repository,
+)
 from basstler.stack.configuration import (
     CommittedStackConfiguration,
     MissingUpstreamRepositoryError,
 )
 from basstler.standard_streams import StandardStreamHandler
-from basstler.upstream_reviews.clients import (
+from basstler_domain_model.github.clients import (
     GitHubCommandLineClient,
 )
-from basstler.upstream_reviews.exceptions import (
-    UpstreamReadError,
-)
-from basstler.upstream_reviews.readers import (
+from basstler_domain_model.github.readers import (
     ReadSource,
 )
 from basstler.upstream_reviews.request import UpstreamReadRequest
@@ -129,7 +132,7 @@ def main(argv: list[str] | None = None) -> int:
     arguments = _parse_arguments(argv)
     try:
         report = _build_report(arguments)
-    except (UpstreamReadError, MissingUpstreamRepositoryError) as failure:
+    except (PullRequestReadError, MissingUpstreamRepositoryError) as failure:
         logger.error(failure)
         return 1
     logger.info(report)

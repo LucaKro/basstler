@@ -12,10 +12,18 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from basstler.class_property import classproperty
-from basstler.maintenance.board import PullRequestField
-from basstler.maintenance.git_commands import GitCommandRunner
-from basstler.maintenance.github import PullRequestReader
+from basstler_domain_model.class_property import (
+    classproperty,
+)
+from basstler_domain_model.github.pull_request_fields import (
+    PullRequestField,
+)
+from basstler_domain_model.git.commands import (
+    GitCommandRunner,
+)
+from basstler_domain_model.github.repository_client import (
+    PullRequestReader,
+)
 from basstler.stack.model import Branch, Stack
 
 # %% how much a branch changes

@@ -14,7 +14,9 @@ from typing import Any
 
 import yaml
 
-from basstler.class_property import classproperty
+from basstler_domain_model.class_property import (
+    classproperty,
+)
 from basstler.locations import DashboardArtifactFile
 
 # %% the published files

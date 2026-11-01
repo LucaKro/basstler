@@ -33,7 +33,9 @@ from basstler.plan.size_limits import (
     RoadmapEntryLocation,
     SizeViolation,
 )
-from basstler.repository import PullRequestReference
+from basstler_domain_model.repository import (
+    PullRequestReference,
+)
 
 from ...constants.notes import ScratchBranch
 from ...constants.paths import DatasetLocation

@@ -10,7 +10,9 @@ import pytest
 
 from basstler.maintenance.check_overview import CheckOverview
 from basstler.maintenance.commands import ChecksCommand
-from basstler.upstream_reviews.vocabulary import RollupState
+from basstler_domain_model.github.vocabulary import (
+    RollupState,
+)
 
 from ..constants.stack import StackBranch
 

@@ -20,13 +20,17 @@ import pytest
 import basstler.upstream_reviews.action.__main__
 import basstler.upstream_reviews.action.run
 from basstler.locations import PackageLocation
-from basstler.repository import Repository
+from basstler_domain_model.repository import (
+    Repository,
+)
 from basstler.upstream_reviews.action.__main__ import (
     ActionCommand,
     ActionExitCode,
     main,
 )
-from basstler.maintenance.git_commands import GitCommandRunner
+from basstler_domain_model.git.commands import (
+    GitCommandRunner,
+)
 from basstler.upstream_reviews.action.branch import (
     ActionInstallation,
     InstallationState,
@@ -42,7 +46,7 @@ from basstler.upstream_reviews.action.recording import (
     ReplayingGraphQLClient,
 )
 from basstler.upstream_reviews.action.run import ActionRun
-from basstler.upstream_reviews.clients import (
+from basstler_domain_model.github.clients import (
     GitHubCommandLineClient,
     RestClient,
 )
@@ -52,10 +56,14 @@ from basstler.upstream_reviews.exceptions import (
     ActionResultMissing,
     ActionRunFailed,
     ActionRunNotStarted,
+)
+from basstler_domain_model.github.exceptions import (
     GitHubCommandFailed,
     UpstreamPullRequestNotFound,
 )
-from basstler.upstream_reviews.readers import UpstreamPullRequestReader
+from basstler_domain_model.github.readers import (
+    UpstreamPullRequestReader,
+)
 from basstler.upstream_reviews.request import (
     UpstreamReadRequest,
 )

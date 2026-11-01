@@ -15,24 +15,6 @@ import re
 from enum import Enum, StrEnum
 
 
-class GitHubClient(StrEnum):
-    """
-    The executables the tooling reaches the GitHub API through, each named as it is on
-    ``PATH``.
-    """
-
-    COMMAND_LINE = "gh"
-    """
-    GitHub's own command-line client, preferred where it is installed.
-    """
-
-    CURL = "curl"
-    """
-    The plain HTTP client the shell hooks fall back to, with a token, where there is no
-    ``gh``.
-    """
-
-
 class DescriptionPattern(Enum):
     """
     What the tooling looks for in a pull request description.
@@ -112,53 +94,4 @@ class CommitTrailer(StrEnum):
     """
     The commit of the parent a restack merged in, which a restack's own merge records as
     its second parent.
-    """
-
-
-class MergeableState(StrEnum):
-    """
-    The values GitHub reports as a pull request's ``mergeable_state``.
-
-    Only :attr:`DIRTY` means a branch genuinely conflicts with its base; every other one
-    means there are no conflicts, whatever else may be true of it.
-    """
-
-    DIRTY = "dirty"
-    """
-    The branch conflicts with its base.
-    """
-
-    CLEAN = "clean"
-    """
-    Mergeable, with every required check passing.
-    """
-
-    UNSTABLE = "unstable"
-    """
-    Mergeable, with a check that is not required failing.
-    """
-
-    BLOCKED = "blocked"
-    """
-    Mergeable once a required review or check passes.
-    """
-
-    BEHIND = "behind"
-    """
-    Mergeable once brought up to date with its base.
-    """
-
-    HAS_HOOKS = "has_hooks"
-    """
-    Mergeable, with pre-receive hooks configured.
-    """
-
-    DRAFT = "draft"
-    """
-    A draft, which cannot be merged until it is marked ready.
-    """
-
-    UNKNOWN = "unknown"
-    """
-    Not yet computed by GitHub.
     """

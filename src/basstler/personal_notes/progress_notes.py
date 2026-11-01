@@ -11,17 +11,29 @@ from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 
-from basstler.pull_request_state import PullRequestState
-from basstler.environment import GitHubCredentialVariable
-from basstler.exceptions import DataclassException
-from basstler.maintenance.board import (
-    PullRequestField,
-    PullRequestHeadKey,
-    PullRequestRecord,
+from basstler_domain_model.github.vocabulary import (
+    PullRequestState,
 )
-from basstler.maintenance.git_commands import GitCommandRunner
-from basstler.maintenance.github import GitHubRepository
-from basstler.repository import Repository
+from basstler_domain_model.environment import (
+    GitHubCredentialVariable,
+)
+from basstler_domain_model.exceptions import (
+    DataclassException,
+)
+from basstler_domain_model.github.pull_request_fields import (
+    PullRequestField,
+    PullRequestPayload,
+)
+from basstler_domain_model.github.pull_request_fields import PullRequestHeadKey
+from basstler_domain_model.git.commands import (
+    GitCommandRunner,
+)
+from basstler_domain_model.github.repository_client import (
+    GitHubRepository,
+)
+from basstler_domain_model.repository import (
+    Repository,
+)
 from basstler.standard_streams import StandardStreamHandler
 
 logger = StandardStreamHandler.logger_for(__name__)
@@ -60,7 +72,7 @@ class BranchPullRequests:
 
     @classmethod
     def from_pull_requests(
-        cls, pull_requests: list[PullRequestRecord], repository: Repository
+        cls, pull_requests: list[PullRequestPayload], repository: Repository
     ) -> BranchPullRequests:
         """
         :param pull_requests: Every pull request of the repository, in any state.

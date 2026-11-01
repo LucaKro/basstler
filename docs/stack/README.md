@@ -94,12 +94,12 @@ next to the workflow it describes, because it is read rather than run.
   command line onto modules named for what they do, so nothing has to be hunted for inside one
   long file: `maintenance/constants.py` (every value edited by hand),
   `maintenance/git_commands.py`, `maintenance/board.py`, `maintenance/description.py`,
-  `maintenance/github.py`,
   `maintenance/fast_forward.py`, `maintenance/restack_steps.py` and
   `maintenance/restack_procedure.py` (the steps, and the order that is the procedure),
   `maintenance/promotion.py`, `maintenance/promotion_context.py`,
   `maintenance/check_overview.py`, `maintenance/report.py`, `maintenance/finish_summary.py` and
-  `maintenance/commands.py`. A skill runs it through `plugin/hooks/basstler.sh`, which waits on
+  `maintenance/commands.py`, with the git runner and the GitHub client they call coming
+  from `basstler_domain_model`. A skill runs it through `plugin/hooks/basstler.sh`, which waits on
   or completes the package install first.
 - **`skills/stacked-pr-maintenance/SKILL.md`** - the maintenance instructions, invocable
   as `/stacked-pr-maintenance` from any session, and run first by `/plan-item-kickoff` and

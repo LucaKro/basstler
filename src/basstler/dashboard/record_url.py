@@ -16,7 +16,9 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 from basstler.dashboard.publication import DashboardUrlCache
-from basstler.exceptions import DataclassException
+from basstler_domain_model.exceptions import (
+    DataclassException,
+)
 from basstler.standard_streams import StandardStreamHandler
 
 logger = StandardStreamHandler.logger_for(__name__)

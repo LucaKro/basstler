@@ -41,12 +41,27 @@ from enum import Enum, StrEnum
 from pathlib import Path
 
 from basstler.bash import Bash
-from basstler.class_property import classproperty
+from basstler_domain_model.class_property import (
+    classproperty,
+)
 from basstler.github_labels import GitHubLabel
-from basstler.locations import ClaudeCodeVariable, PluginLocation, ProjectLocation
-from basstler.maintenance.git_commands import GitCommandFailed, GitCommandRunner
+from basstler_domain_model.environment import (
+    ClaudeCodeVariable,
+)
+from basstler.locations import (
+    PluginLocation,
+    ProjectLocation,
+)
+from basstler_domain_model.git.exceptions import (
+    GitCommandFailed,
+)
+from basstler_domain_model.git.commands import (
+    GitCommandRunner,
+)
 from basstler.plugin_root import PluginRoot
-from basstler.repository import Repository
+from basstler_domain_model.repository import (
+    Repository,
+)
 from basstler.shell_configuration import (
     FetchedBranchReference,
     ShellConfigurationFunction,

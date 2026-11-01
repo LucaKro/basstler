@@ -21,7 +21,12 @@ from basstler.exceptions import (
 )
 from basstler.plan.model import ItemStatus, ManifestKey
 from basstler.plan.validation import PlanValidator
-from basstler.pull_request_state import PullRequestRecord, PullRequestState
+from basstler.pull_request_state import (
+    PullRequestRecord,
+)
+from basstler_domain_model.github.vocabulary import (
+    PullRequestState,
+)
 from basstler.plan.model import PlanDocument
 from basstler.plan.sync_manifest_status import (
     ManifestText,

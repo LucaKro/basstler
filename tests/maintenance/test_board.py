@@ -13,19 +13,36 @@ from pathlib import Path
 
 import pytest
 
-from basstler.repository import Repository
+from basstler_domain_model.repository import (
+    Repository,
+)
 from basstler.stack.model import PullRequest
 
 from basstler.locations import RepositoryStateLocation
-from basstler.maintenance.board import (
+from basstler_domain_model.github.exceptions import (
     MissingPullRequestFieldError,
-    PullRequestField,
-    PullRequestHeadKey,
 )
-from basstler.upstream_reviews.vocabulary import RollupState
+from basstler_domain_model.github.pull_request_fields import (
+    PullRequestField,
+)
+from basstler_domain_model.github.pull_request_fields import PullRequestHeadKey
+from basstler_domain_model.github.vocabulary import RestJSONKey
+from basstler_domain_model.github.vocabulary import (
+    RollupState,
+)
 from basstler.maintenance.commands import BoardCommand, MaintenancePass
-from basstler.maintenance.git_commands import GitCommandFailed, GitCommandRunner
-from basstler.maintenance.github import GitHubRequestFailed, PullRequestReader
+from basstler_domain_model.git.exceptions import (
+    GitCommandFailed,
+)
+from basstler_domain_model.git.commands import (
+    GitCommandRunner,
+)
+from basstler_domain_model.github.exceptions import (
+    GitHubRequestFailed,
+)
+from basstler_domain_model.github.repository_client import (
+    PullRequestReader,
+)
 from basstler.maintenance.description import (
     PullRequestDescription,
     UpstreamPullRequestLink,
@@ -312,7 +329,7 @@ def test_the_export_records_the_verdict_over_the_head_commit_s_checks():
 
 def test_a_head_that_does_not_name_its_commit_is_rejected():
     record = an_api_record(number=StackPullRequestNumber.CHILD)
-    del record[PullRequestField.HEAD.key][PullRequestHeadKey.COMMIT]
+    del record[PullRequestField.HEAD.key][RestJSONKey.SHA]
 
     with pytest.raises(MissingPullRequestFieldError) as raised:
         an_export([record])

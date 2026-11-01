@@ -27,15 +27,19 @@ from basstler.maintenance.upstream_pull_request_synchronization import (
     UpstreamPullRequestSynchronizationAction,
     UpstreamPullRequestSynchronizationChange,
 )
-from basstler.stack.model import (
+from basstler_domain_model.git.commands import (
     IntegrationStrategy,
+)
+from basstler.stack.model import (
     PullRequest,
     Reparent,
     SkippedPullRequest,
     SkipReason,
     Stack,
 )
-from basstler.upstream_reviews.vocabulary import RollupState
+from basstler_domain_model.github.vocabulary import (
+    RollupState,
+)
 
 from ..constants.paths import DatasetLocation
 from ..constants.stack import StackBranch

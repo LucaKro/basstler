@@ -16,24 +16,37 @@ from typing import Any
 
 from basstler.maintenance.constants import (
     CommitTrailer,
-    MergeableState,
     MaintenanceText,
 )
-from basstler.maintenance.board import PullRequestField
-from basstler.maintenance.git_commands import (
+from basstler_domain_model.github.vocabulary import (
+    MergeableState,
+)
+from basstler_domain_model.github.pull_request_fields import (
+    PullRequestField,
+)
+from basstler_domain_model.git.commands import (
     GitCommandResult,
     GitCommandRunner,
-    ProposedPush,
 )
-from basstler.maintenance.github import ForkPullRequests
+from basstler_domain_model.github.repository_client import (
+    ForkPullRequests,
+)
 from basstler.stack.commit_move import (
     CommitMoveAction,
     CommitMoveChecks,
     ProposedCommitMove,
     RefusalReason,
 )
-from basstler.stack.label_write import LabelWrite
-from basstler.stack.model import Branch, IntegrationStrategy, Stack
+from basstler_domain_model.github.labels import (
+    LabelWrite,
+)
+from basstler.stack.model import (
+    Branch,
+    Stack,
+)
+from basstler_domain_model.git.commands import (
+    IntegrationStrategy,
+)
 from basstler.stack.settings import Configuration
 
 # %% what became of one branch
@@ -627,8 +640,7 @@ class PublishBranch(RestackStep):
         :return: What became of the push - this step always concludes the branch."""
         git = restacking.git
         push = git.push(
-            ProposedPush.publishing(
-                restacking.configuration,
+            restacking.configuration.propose_push(
                 restacking.branch.name,
                 restacking.strategy,
                 replaces_superseded_merges=not git.contains(

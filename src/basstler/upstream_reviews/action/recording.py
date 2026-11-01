@@ -4,16 +4,20 @@ What the fork's Action recorded of the upstream, and replaying it in place of Gi
 
 from __future__ import annotations
 
+from basstler_domain_model.github.exceptions import PullRequestReadError
+
 import hashlib
 from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
 
-from basstler.repository import Repository
+from basstler_domain_model.repository import (
+    Repository,
+)
 from basstler.upstream_reviews.action.exchange import (
     ActionAnswer,
 )
-from basstler.upstream_reviews.clients import (
+from basstler_domain_model.github.clients import (
     GitHubCommandLineClient,
     GraphQLClient,
     JobLogReader,
@@ -21,18 +25,17 @@ from basstler.upstream_reviews.clients import (
 from basstler.upstream_reviews.exceptions import (
     ActionResponseMissing,
     ActionRunFailed,
-    UpstreamReadError,
 )
 from basstler.upstream_reviews.helper.recording import (
     RecordedJobLog,
 )
-from basstler.upstream_reviews.readers import (
+from basstler_domain_model.github.readers import (
     UpstreamPullRequestReader,
 )
 from basstler.upstream_reviews.request import (
     UpstreamReadRequest,
 )
-from basstler.upstream_reviews.vocabulary import (
+from basstler_domain_model.github.vocabulary import (
     JSONModel,
 )
 
@@ -163,7 +166,7 @@ class ActionResult(ActionAnswer):
                 recording,
                 include_resolved=False,
             )
-        except UpstreamReadError as failure:
+        except PullRequestReadError as failure:
             return cls(request.identifier, error=str(failure))
         return cls(request.identifier, None, recording.responses, recording.job_logs)
 

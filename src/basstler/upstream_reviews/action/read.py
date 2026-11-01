@@ -11,7 +11,9 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, Generic
 
-from basstler.repository import Repository
+from basstler_domain_model.repository import (
+    Repository,
+)
 from basstler.upstream_reviews.action.branch import (
     RemoteBranch,
 )
@@ -27,7 +29,7 @@ from basstler.upstream_reviews.action.recording import (
     ActionJSONKey,
     ActionResult,
 )
-from basstler.upstream_reviews.clients import (
+from basstler_domain_model.github.clients import (
     RestClient,
 )
 from basstler.upstream_reviews.exceptions import (
@@ -35,9 +37,11 @@ from basstler.upstream_reviews.exceptions import (
     ActionResultMissing,
     ActionRunFailed,
     ActionRunNotStarted,
+)
+from basstler_domain_model.github.exceptions import (
     GitHubCommandFailed,
 )
-from basstler.upstream_reviews.vocabulary import (
+from basstler_domain_model.github.vocabulary import (
     CheckOutcome,
     JSONModel,
 )

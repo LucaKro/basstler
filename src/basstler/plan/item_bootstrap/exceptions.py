@@ -7,8 +7,12 @@ from __future__ import annotations
 from abc import ABC
 from dataclasses import dataclass
 
-from basstler.class_property import classproperty
-from basstler.exceptions import DataclassException
+from basstler_domain_model.class_property import (
+    classproperty,
+)
+from basstler_domain_model.exceptions import (
+    DataclassException,
+)
 from basstler.exit_codes import CommandFailure
 from basstler.locations import PluginLocation
 from basstler.plan.item_bootstrap.vocabulary import PlanItemBootstrapExitCode

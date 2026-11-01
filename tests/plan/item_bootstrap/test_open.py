@@ -20,7 +20,9 @@ from basstler.plan.model import (
     ManifestKey,
     PlanDocument,
 )
-from basstler.repository import Repository
+from basstler_domain_model.repository import (
+    Repository,
+)
 
 from ...constants.notes import ScratchBranch
 from ...scratch_repository import ScratchRepository

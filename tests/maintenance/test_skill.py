@@ -12,7 +12,9 @@ from __future__ import annotations
 
 import subprocess
 
-from basstler.repository import Repository
+from basstler_domain_model.repository import (
+    Repository,
+)
 from basstler.stack.configuration import CommittedStackConfiguration
 
 from ..constants.paths import RepositoryLocation, SkillDirectory

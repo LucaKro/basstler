@@ -20,11 +20,18 @@ from pathlib import Path
 from typing import Any
 
 from basstler.github_labels import GitHubLabel
-from basstler.maintenance.board import PullRequestField
+from basstler_domain_model.github.pull_request_fields import (
+    PullRequestField,
+)
 from basstler.maintenance.constants import MaintenanceText
 from basstler.maintenance.description import PullRequestDescription
-from basstler.maintenance.github import ForkPullRequests, PullRequestWriter
-from basstler.stack.label_write import LabelWrite
+from basstler_domain_model.github.repository_client import (
+    ForkPullRequests,
+    PullRequestWriter,
+)
+from basstler_domain_model.github.labels import (
+    LabelWrite,
+)
 from basstler.stack.model import BranchStatus, Stack
 from basstler.stack.promotion_link import PromotionLink
 

@@ -15,11 +15,19 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
 
-from basstler.class_property import classproperty
-from basstler.locations import ClaudeCodeVariable
+from basstler_domain_model.class_property import (
+    classproperty,
+)
+from basstler_domain_model.environment import (
+    ClaudeCodeVariable,
+)
 from basstler.maintenance.board import UpstreamPullRequests
-from basstler.maintenance.github import PullRequestReader
-from basstler.repository import Repository
+from basstler_domain_model.github.repository_client import (
+    PullRequestReader,
+)
+from basstler_domain_model.repository import (
+    Repository,
+)
 from basstler.upstream_reviews.action.exchange import (
     ActionAnswer,
     ActionRequest,

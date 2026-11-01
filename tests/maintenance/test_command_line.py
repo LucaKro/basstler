@@ -11,19 +11,28 @@ from dataclasses import dataclass
 import pytest
 
 import basstler.maintenance.__main__
-from basstler.environment import GitHubCredentialVariable
+from basstler_domain_model.environment import (
+    GitHubCredentialVariable,
+)
 from basstler.maintenance.upstream_action import UpstreamReadRoute
 
 from basstler.exit_codes import StackExitCode
 
-from basstler.class_property import classproperty
+from basstler_domain_model.class_property import (
+    classproperty,
+)
 from basstler.maintenance.commands import (
     BoardCommand,
     MaintenanceCommand,
     RestackCommand,
 )
-from basstler.pull_request_state import PullRequestState
-from basstler.maintenance.github import ForkPullRequests, PullRequestListState
+from basstler_domain_model.github.vocabulary import (
+    PullRequestState,
+)
+from basstler_domain_model.github.repository_client import (
+    ForkPullRequests,
+    PullRequestListState,
+)
 from basstler.maintenance.restack_steps import RestackStep
 
 from ..constants.stack import RemoteName
@@ -171,7 +180,10 @@ def test_a_missing_board_is_reported_ahead_of_a_missing_credential(
     "list_state, states",
     [
         (PullRequestListState.OPEN, (PullRequestState.OPEN,)),
-        (PullRequestListState.CLOSED, (PullRequestState.CLOSED,)),
+        (
+            PullRequestListState.CLOSED,
+            (PullRequestState.CLOSED, PullRequestState.MERGED),
+        ),
         (PullRequestListState.ALL, tuple(PullRequestState)),
     ],
 )

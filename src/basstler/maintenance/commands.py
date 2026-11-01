@@ -16,14 +16,21 @@ from enum import StrEnum
 from pathlib import Path
 
 from basstler.exit_codes import StackExitCode
-from basstler.class_property import classproperty
+from basstler_domain_model.class_property import (
+    classproperty,
+)
 from basstler.command_line import Command
 from basstler.locations import RepositoryStateLocation
 from basstler.maintenance.board import BoardExport, UpstreamPullRequests
 from basstler.maintenance.fast_forward import fast_forward
 from basstler.maintenance.finish_summary import FinishSummary
-from basstler.maintenance.git_commands import GitCommandRunner
-from basstler.maintenance.github import GitHubRepository, PullRequestReader
+from basstler_domain_model.git.commands import (
+    GitCommandRunner,
+)
+from basstler_domain_model.github.repository_client import (
+    GitHubRepository,
+    PullRequestReader,
+)
 from basstler.maintenance.promotion import (
     PromotionSummaries,
     clear_spent_promotion_labels,
@@ -46,7 +53,9 @@ from basstler.stack.settings import Configuration
 from basstler.standard_streams import StandardStreamHandler
 from basstler.upstream_reviews.action.branch import RemoteBranch
 from basstler.upstream_reviews.action.read import ActionRead
-from basstler.upstream_reviews.clients import GitHubCommandLineClient
+from basstler_domain_model.github.clients import (
+    GitHubCommandLineClient,
+)
 
 logger = StandardStreamHandler.logger_for(__name__)
 """

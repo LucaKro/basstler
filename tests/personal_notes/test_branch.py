@@ -10,7 +10,9 @@ from pathlib import PurePosixPath
 import pytest
 
 from basstler.exceptions import NotesBranchMissingError, UnsafeNotesPathError
-from basstler.maintenance.git_commands import GitCommandRunner
+from basstler_domain_model.git.commands import (
+    GitCommandRunner,
+)
 from basstler.personal_notes.branch import (
     NotesBranchWriter,
     NotesWriteOutcome,
