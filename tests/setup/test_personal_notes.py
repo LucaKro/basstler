@@ -10,9 +10,11 @@ and no credential. The hook scripts it drives run for real.
 
 from __future__ import annotations
 
+import json
 import shutil
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from http import HTTPStatus
 from pathlib import Path
 from typing import Any
 
@@ -29,7 +31,9 @@ from basstler.locations import (
     PluginSkillLocation,
     ProjectLocation,
 )
-from basstler_domain_model.github.repository_client import GitHubPath, GitHubRepository
+from basstler_domain_model.github.clients import GitHubApi, RestAnswer
+from basstler_domain_model.github.repository_client import GitHubRepository
+from basstler_domain_model.github.routes import RepositoryRoute
 from basstler_domain_model.github.vocabulary import RestJSONKey
 from basstler.plugin_root import PluginRoot
 from basstler_domain_model.repository import (
@@ -77,9 +81,9 @@ A repository owned by anybody but the credential's owner, which must be refused.
 
 
 @dataclass(frozen=True)
-class GitHubAnsweringFromMemory(GitHubRepository):
+class AccountAndLabelsInMemory(GitHubApi):
     """
-    A repository client whose account and labels live in memory, recording every label
+    The API answering with an account and labels kept in memory, recording every label
     it is asked to create.
     """
 
@@ -100,16 +104,19 @@ class GitHubAnsweringFromMemory(GitHubRepository):
     Every label-creation payload sent, in order.
     """
 
-    def _request(
+    def attempt(
         self, method: str, path: str, payload: Mapping[str, Any] | None = None
-    ) -> Any:
-        if path == str(GitHubPath.AUTHENTICATED_USER):
-            return {RestJSONKey.LOGIN: self.login}
+    ) -> RestAnswer:
+        if path == RepositoryRoute.authenticated_user():
+            return RestAnswer(
+                HTTPStatus.OK, json.dumps({RestJSONKey.LOGIN: self.login})
+            )
         if payload is not None:
             self.created_labels.append(payload)
             self.present_labels.add(payload[RestJSONKey.NAME])
-            return payload
-        return [{RestJSONKey.NAME: label} for label in sorted(self.present_labels)]
+            return RestAnswer(HTTPStatus.CREATED, json.dumps(payload))
+        labels = [{RestJSONKey.NAME: label} for label in sorted(self.present_labels)]
+        return RestAnswer(HTTPStatus.OK, json.dumps(labels))
 
 
 # %% the scratch layout
@@ -401,15 +408,17 @@ def test_finishes_everything_else_when_given_no_identity(
 def test_refuses_a_remote_someone_else_owns_before_writing_anything(
     setup_repository: ScratchRepository,
 ):
-    github = GitHubAnsweringFromMemory(SOMEONE_ELSE)
+    memory = AccountAndLabelsInMemory()
 
     with pytest.raises(ForeignNotesRemoteError) as refusal:
         setup_for(
-            setup_repository, *identity_arguments(SCRATCH_IDENTITY), github=github
+            setup_repository,
+            *identity_arguments(SCRATCH_IDENTITY),
+            github=GitHubRepository(SOMEONE_ELSE, memory),
         ).run()
 
     assert refusal.value.repository == SOMEONE_ELSE
-    assert refusal.value.login == github.login
+    assert refusal.value.login == memory.login
     unset = setup_repository.run_git_allowing_failure(
         "config", "--get", PersonalNotesSetting.REMOTE.git_config_key
     )
@@ -418,34 +427,34 @@ def test_refuses_a_remote_someone_else_owns_before_writing_anything(
 
 
 def test_accepts_a_remote_whose_owner_differs_only_in_case():
-    github = GitHubAnsweringFromMemory(
-        CREDENTIAL_OWNER, login=CREDENTIAL_OWNER.owner.upper()
-    )
+    memory = AccountAndLabelsInMemory(login=CREDENTIAL_OWNER.owner.upper())
 
-    labels_setup(github=github).verify_notes_remote_owner()
+    labels_setup(
+        github=GitHubRepository(CREDENTIAL_OWNER, memory)
+    ).verify_notes_remote_owner()
 
 
 # %% pull request labels
 
 
 def test_reports_missing_labels_without_creating_them():
-    github = GitHubAnsweringFromMemory(
-        CREDENTIAL_OWNER, present_labels={WorkflowLabel.MERGED}
-    )
+    memory = AccountAndLabelsInMemory(present_labels={WorkflowLabel.MERGED})
 
-    labels_setup(github=github).check_labels()
+    labels_setup(github=GitHubRepository(CREDENTIAL_OWNER, memory)).check_labels()
 
-    assert github.created_labels == []
+    assert memory.created_labels == []
 
 
 def test_creates_only_the_missing_labels_when_asked():
-    github = GitHubAnsweringFromMemory(
-        CREDENTIAL_OWNER, present_labels=set(WorkflowLabel) - {WorkflowLabel.IN_REVIEW}
+    memory = AccountAndLabelsInMemory(
+        present_labels=set(WorkflowLabel) - {WorkflowLabel.IN_REVIEW}
     )
 
-    labels_setup(SetupOption.CREATE_LABELS, github=github).check_labels()
+    labels_setup(
+        SetupOption.CREATE_LABELS, github=GitHubRepository(CREDENTIAL_OWNER, memory)
+    ).check_labels()
 
-    assert github.created_labels == [
+    assert memory.created_labels == [
         {
             RestJSONKey.NAME: WorkflowLabel.IN_REVIEW,
             RestJSONKey.DESCRIPTION: WorkflowLabel.IN_REVIEW.description,
@@ -454,8 +463,10 @@ def test_creates_only_the_missing_labels_when_asked():
 
 
 def test_creates_every_label_a_fresh_repository_lacks():
-    github = GitHubAnsweringFromMemory(CREDENTIAL_OWNER)
+    memory = AccountAndLabelsInMemory()
 
-    labels_setup(SetupOption.CREATE_LABELS, github=github).check_labels()
+    labels_setup(
+        SetupOption.CREATE_LABELS, github=GitHubRepository(CREDENTIAL_OWNER, memory)
+    ).check_labels()
 
-    assert github.present_labels == set(WorkflowLabel)
+    assert memory.present_labels == set(WorkflowLabel)

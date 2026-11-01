@@ -5,7 +5,6 @@ The branch of the fork the upstream-reviews Action lives on, and installing it.
 from __future__ import annotations
 
 import re
-import tempfile
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
@@ -101,26 +100,9 @@ class RemoteBranch:
         :param message: The commit message.
         :return: The new commit.
         """
-        with tempfile.TemporaryDirectory() as scratch:
-            index = {"GIT_INDEX_FILE": str(Path(scratch) / "index")}
-            if parent is None:
-                self.git.run("read-tree", "--empty", environment=index)
-            else:
-                self.git.run("read-tree", parent, environment=index)
-            for path, text in files.items():
-                blob_file = Path(scratch) / "blob"
-                blob_file.write_text(text + "\n")
-                blob = self.git.run("hash-object", "-w", str(blob_file))
-                self.git.run(
-                    "update-index",
-                    "--add",
-                    "--cacheinfo",
-                    f"100644,{blob},{path}",
-                    environment=index,
-                )
-            tree = self.git.run("write-tree", environment=index)
-        parents = ["-p", parent] if parent else []
-        return self.git.run("commit-tree", tree, *parents, "-m", message)
+        return self.git.commit_files(
+            parent, {Path(path): f"{text}\n" for path, text in files.items()}, message
+        )
 
     def write(
         self, files: dict[ActionFile, str], message: str, attempts: int = 3

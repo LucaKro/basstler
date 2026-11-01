@@ -5,20 +5,16 @@ maintenance pass calls GitHub with.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from http import HTTPStatus
 from typing import Any
 
-from basstler_domain_model.github.repository_client import (
-    CommitReport,
-    GitHubRepository,
-    ListingParameter,
-    RepositoryPath,
-)
-from basstler_domain_model.github.exceptions import (
-    GitHubRequestFailed,
-)
+from basstler_domain_model.class_property import classproperty
+from basstler_domain_model.github.clients import GitHubApi, RestAnswer
+from basstler_domain_model.github.repository_client import GitHubRepository
+from basstler_domain_model.github.routes import RepositoryRoute
 from basstler_domain_model.github.vocabulary import (
     RollupState,
 )
@@ -32,59 +28,64 @@ from ..upstream_reviews.test_rest import (
 )
 from .fork import PullRequestHeadRepository
 
-# %% a client answering from recorded pages
+# %% an API answering from recorded pages
 
 
 @dataclass(frozen=True)
-class RepositoryAnsweringFromPages(GitHubRepository):
+class ApiAnsweringFromPages(GitHubApi):
     """
-    A repository client answering each listing from its recorded pages, one per page
-    number.
+    The API answering each listing from its recorded pages, each page linking to the
+    next the way GitHub's ``Link`` header does.
     """
+
+    token: str = ""
 
     pages_by_listing: Mapping[str, list[Any]] = field(default_factory=dict)
     """
-    Every page of each listing, by the listing's path without its query.
+    Every page of each listing, by the path its first page is read from.
     """
 
-    def _call(
+    @classproperty
+    def page_marker(cls) -> str:
+        """
+        What the double appends to a listing's path to address one of its later pages.
+        """
+        return "#page="
+
+    def attempt(
         self, method: str, path: str, payload: Mapping[str, Any] | None = None
-    ) -> Any:
-        listing, query = path.split("?")
-        parameters = dict(parameter.split("=") for parameter in query.split("&"))
+    ) -> RestAnswer:
+        listing, _, page = path.partition(self.page_marker)
         pages = self.pages_by_listing.get(listing)
         if pages is None:
-            raise GitHubRequestFailed(
-                status=HTTPStatus.NOT_FOUND, detail="", method=method, path=path
-            )
-        return pages[int(parameters[ListingParameter.PAGE]) - 1]
-
-
-def commit_report_path(report: CommitReport) -> str:
-    """
-    :param report: Which listing of the recorded head commit to read.
-    :return: Its path below the repository.
-    """
-    return f"{RepositoryPath.COMMITS}/{HEAD_SHA}/{report}"
+            return RestAnswer(HTTPStatus.NOT_FOUND, "")
+        index = int(page or 0)
+        link = (
+            {"link": f'<{listing}{self.page_marker}{index + 1}>; rel="next"'}
+            if index + 1 < len(pages)
+            else {}
+        )
+        return RestAnswer(HTTPStatus.OK, json.dumps(pages[index]), link)
 
 
 def a_repository_reporting(
     check_runs: RecordedRestResponse, status: RecordedRestResponse
-) -> RepositoryAnsweringFromPages:
+) -> GitHubRepository:
     """
     :param check_runs: The recorded check-run pages of the head commit.
     :param status: The recorded commit-status pages of the head commit.
-    :return: A client whose pages hold two entries, so the recorded check runs span
-        more than one page.
+    :return: A client whose recorded check runs span more than one page.
     """
-    return RepositoryAnsweringFromPages(
-        repository=PullRequestHeadRepository.FORK.value,
-        token="",
-        page_size=2,
-        pages_by_listing={
-            commit_report_path(CommitReport.CHECK_RUNS): check_runs.load(),
-            commit_report_path(CommitReport.STATUS): status.load(),
-        },
+    repository = PullRequestHeadRepository.FORK.value
+    route = RepositoryRoute(repository)
+    return GitHubRepository(
+        repository,
+        ApiAnsweringFromPages(
+            pages_by_listing={
+                route.check_runs(HEAD_SHA): check_runs.load(),
+                route.commit_status(HEAD_SHA): status.load(),
+            }
+        ),
     )
 
 

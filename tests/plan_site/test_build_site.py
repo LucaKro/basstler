@@ -5,6 +5,7 @@ each plan's dashboard.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from http import HTTPStatus
@@ -34,6 +35,8 @@ from basstler.workflow_labels import WorkflowLabel
 from basstler_domain_model.github.pull_request_fields import (
     PullRequestField,
 )
+from basstler_domain_model.github.clients import GitHubApi, RestAnswer
+from basstler_domain_model.github.routes import RepositoryRoute
 from basstler_domain_model.github.repository_client import (
     GitHubRepository,
     PullRequestListState,
@@ -502,24 +505,26 @@ def test_from_api_reads_a_merge():
 
 
 @dataclass(frozen=True)
-class RecordedRepository(GitHubRepository):
+class RecordedApi(GitHubApi):
     """
-    A repository client answering from recorded responses, keyed by request path.
+    The API answering every repository from recorded responses, keyed by the request's
+    path below the repository.
     """
+
+    token: str = ""
 
     responses: Mapping[str, Any] = field(default_factory=dict)
     """
     The decoded response to each ``GET`` path; any other path answers not found.
     """
 
-    def _call(
+    def attempt(
         self, method: str, path: str, payload: Mapping[str, Any] | None = None
-    ) -> Any:
-        if path not in self.responses:
-            raise GitHubRequestFailed(
-                status=HTTPStatus.NOT_FOUND, detail="", method=method, path=path
-            )
-        return self.responses[path]
+    ) -> RestAnswer:
+        below_repository = "/" + path.split("/", 3)[3]
+        if below_repository not in self.responses:
+            return RestAnswer(HTTPStatus.NOT_FOUND, "")
+        return RestAnswer(HTTPStatus.OK, json.dumps(self.responses[below_repository]))
 
 
 @dataclass
@@ -534,7 +539,7 @@ class RecordedGitHubPullRequestSource(GitHubPullRequestSource):
     """
 
     def client_for(self, repository: Repository) -> GitHubRepository:
-        return RecordedRepository(repository, self.token, responses=self.responses)
+        return GitHubRepository(repository, RecordedApi(responses=self.responses))
 
 
 def listing_path() -> str:
@@ -543,7 +548,7 @@ def listing_path() -> str:
     """
     return (
         f"/pulls?state={PullRequestListState.ALL.query}"
-        f"&per_page={GitHubRepository.page_size}&page=1"
+        f"&per_page={RepositoryRoute.page_size}"
     )
 
 
@@ -595,17 +600,17 @@ def test_github_source_reads_an_issue_url():
 
 
 @dataclass(frozen=True)
-class RefusingRepository(GitHubRepository):
+class RefusingApi(GitHubApi):
     """
-    A repository client whose every call is refused as forbidden.
+    The API refusing every call as forbidden.
     """
 
-    def _call(
+    token: str = ""
+
+    def attempt(
         self, method: str, path: str, payload: Mapping[str, Any] | None = None
-    ) -> Any:
-        raise GitHubRequestFailed(
-            status=HTTPStatus.FORBIDDEN, detail="", method=method, path=path
-        )
+    ) -> RestAnswer:
+        return RestAnswer(HTTPStatus.FORBIDDEN, "")
 
 
 @dataclass
@@ -615,7 +620,7 @@ class RefusingGitHubPullRequestSource(GitHubPullRequestSource):
     """
 
     def client_for(self, repository: Repository) -> GitHubRepository:
-        return RefusingRepository(repository, self.token)
+        return GitHubRepository(repository, RefusingApi())
 
 
 def test_github_source_reraises_a_refusal_other_than_not_found():

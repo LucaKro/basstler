@@ -53,6 +53,7 @@ from basstler_domain_model.github.exceptions import (
     GitHubCredentialUnavailableError,
     GitHubRequestFailed,
 )
+from basstler_domain_model.github.clients import GitHubApi
 from basstler_domain_model.github.repository_client import (
     GitHubRepository,
 )
@@ -235,7 +236,7 @@ class GitHubPullRequestSource(PullRequestSource):
         :param repository: The repository to call.
         :return: A client for it.
         """
-        return GitHubRepository(repository, self.token)
+        return GitHubRepository(repository, GitHubApi(self.token))
 
     def pull_request(self, reference: PullRequestReference) -> PullRequestRecord | None:
         self.list_pull_requests_of(reference.repository)

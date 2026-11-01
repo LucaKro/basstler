@@ -27,6 +27,8 @@ from basstler.maintenance.finish_summary import FinishSummary
 from basstler_domain_model.git.commands import (
     GitCommandRunner,
 )
+from basstler_domain_model.environment import GitHubCredentialVariable
+from basstler_domain_model.github.exceptions import GitHubCredentialUnavailableError
 from basstler_domain_model.github.repository_client import (
     GitHubRepository,
     PullRequestReader,
@@ -107,11 +109,22 @@ class MaintenancePass:
 
     def fork(self) -> GitHubRepository:
         """:return: The fork, as this run's credential can read and write it."""
-        return GitHubRepository.from_environment(self.configuration.fork_repository)
+        return GitHubRepository(self.configuration.fork_repository, self.api())
 
     def upstream(self) -> PullRequestReader:
         """:return: The upstream, as this run's credential can read it."""
-        return GitHubRepository.from_environment(self.configuration.upstream_repository)
+        return GitHubRepository(self.configuration.upstream_repository, self.api())
+
+    @staticmethod
+    def api() -> GitHubApi:
+        """
+        :return: The API, called with the credential the environment carries.
+        :raises GitHubCredentialUnavailableError: If it carries none.
+        """
+        token = GitHubCredentialVariable.first_token()
+        if not token:
+            raise GitHubCredentialUnavailableError(tuple(GitHubCredentialVariable))
+        return GitHubApi(token)
 
     def upstream_pull_requests(self) -> UpstreamPullRequests:
         """

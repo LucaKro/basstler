@@ -46,6 +46,7 @@ from basstler.locations import (
     PluginLocation,
     PluginSkillLocation,
 )
+from basstler_domain_model.github.clients import GitHubApi
 from basstler_domain_model.github.repository_client import (
     GitHubRepository,
 )
@@ -251,7 +252,7 @@ class PersonalNotesSetup:
         github = (
             None
             if repository is None or token is None
-            else GitHubRepository(repository, token)
+            else GitHubRepository(repository, GitHubApi(token))
         )
         return cls(
             project_root, environment, request, github, PluginRoot.locate(environment)

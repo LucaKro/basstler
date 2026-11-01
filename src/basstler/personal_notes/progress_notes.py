@@ -28,6 +28,7 @@ from basstler_domain_model.github.pull_request_fields import PullRequestHeadKey
 from basstler_domain_model.git.commands import (
     GitCommandRunner,
 )
+from basstler_domain_model.github.clients import GitHubApi
 from basstler_domain_model.github.repository_client import (
     GitHubRepository,
 )
@@ -287,7 +288,7 @@ class ProgressNotesPruning:
             raise UnreadableRemoteError(remote=self.remote)
         repository = Repository.from_remote_url(url.output)
         pull_requests = BranchPullRequests.from_pull_requests(
-            GitHubRepository(repository, token).all_pull_requests(),
+            GitHubRepository(repository, GitHubApi(token)).all_pull_requests(),
             repository,
         )
         remote_branches = frozenset(
