@@ -20,19 +20,18 @@ Commands (run from the repo root; ``--help`` on any of them for its flags)::
     python -m basstler.stack check          # would each branch merge cleanly onto its parent now?
     python -m basstler.stack next           # which branches to submit upstream next
     python -m basstler.stack next --porcelain    # machine-readable: one 'name<TAB>pull request' line per branch
-    python -m basstler.stack restack-plan   # bottom-up restack plan as JSON
     python -m basstler.stack configuration  # every resolved setting, including the remotes
+    python -m basstler.stack register       # put a pull request on top of its GitHub stack
     python -m basstler.stack labels         # the complete label set a write must send
-    python -m basstler.stack check-move      # may these commits move onto that branch?
     python -m basstler.stack promotion-link # the upstream compare-and-create URL for a branch
     python -m basstler.stack reparents      # children whose base has landed, and the base they need
     python -m basstler.stack landed         # open fork pull requests whose branch has landed
 
-The last five exist so the steps most easily got wrong by hand are computed rather than recalled: a
-label write replaces the whole set, a push whose two sides name different branches moves the wrong
-commits, an unencoded compare URL loses its prefill, and a landed parent is decided by git ancestry
-rather than by pull-request state. ``landed`` reports only - GitHub closes a pull request as merged
-by itself once its head is contained in its base, so nothing here has to close one.
+The last four exist so the steps most easily got wrong by hand are computed rather than recalled: a
+label write replaces the whole set, an unencoded compare URL loses its prefill, and a landed parent
+is decided by git ancestry rather than by pull-request state. ``landed`` reports only - GitHub
+closes a pull request as merged by itself once its head is contained in its base, so nothing here
+has to close one.
 """
 
 from __future__ import annotations
@@ -45,15 +44,12 @@ from pathlib import Path
 from basstler.exit_codes import CommandFailure, ExitCode, StackExitCode
 from basstler.locations import RepositoryStateLocation
 from basstler.maintenance.git_commands import GitCommandRunner
+from basstler.maintenance.github import GitHubRepository
 from basstler.repository import Repository
-from basstler.stack.commit_move import (
-    CommitMoveAction,
-    CommitMoveChecks,
-    ProposedCommitMove,
-)
 from basstler.stack.label_write import LabelWrite
 from basstler.stack.model import Stack
 from basstler.stack.promotion_link import PromotionLink
+from basstler.stack.pull_request_stacks import StackRegistration
 from basstler.stack.report import StackReport
 from basstler.stack.settings import Configuration
 from basstler.standard_streams import StandardStreamHandler
@@ -78,17 +74,11 @@ class Command(StrEnum):
     NEXT = "next"
     """Name the branches ready to be promoted upstream."""
 
-    RESTACK_PLAN = "restack-plan"
-    """Emit the bottom-up plan of which branch integrates which parent, and how."""
-
     REPARENTS = "reparents"
     """Name the children whose base has landed and must be retargeted."""
 
     LANDED = "landed"
     """Name the branches whose own commits are already in the upstream base."""
-
-    CHECK_MOVE = "check-move"
-    """Answer whether a proposed commit move may be made, and refuse it if not."""
 
     CONFIGURATION = "configuration"
     """Print the resolved configuration, one ``field<TAB>value`` line per setting."""
@@ -99,12 +89,14 @@ class Command(StrEnum):
     PROMOTION_LINK = "promotion-link"
     """Build the upstream compare-and-create link for one branch."""
 
+    REGISTER = "register"
+    """Put a pull request on top of the GitHub stack the pull requests below it form."""
+
     @property
     def needs_a_board(self) -> bool:
         """Whether answering this command means deriving the stack.
 
-        The ones that do not are answerable from git and configuration alone, so they
-        run before a board has ever been exported.
+        The ones that do not run before a board has ever been exported.
 
         :return: Whether ``board.json`` must exist.
         """
@@ -112,6 +104,7 @@ class Command(StrEnum):
             Command.CONFIGURATION,
             Command.LABELS,
             Command.PROMOTION_LINK,
+            Command.REGISTER,
         }
 
 
@@ -145,17 +138,14 @@ class CommandOption(StrEnum):
     BODY = "--body"
     """The description to prefill."""
 
-    ACTION = "--action"
-    """What a commit move would do."""
+    REPOSITORY = "--repository"
+    """The repository the pull requests are open on, as ``owner/name``."""
 
-    SOURCE = "--source"
-    """The branch whose commits move."""
+    PULL_REQUEST = "--pull-request"
+    """The pull request to put on top of its stack."""
 
-    DESTINATION = "--destination"
-    """The branch they would land on."""
-
-    DESTINATION_REMOTE = "--destination-remote"
-    """The remote holding the destination."""
+    BELOW = "--below"
+    """The pull requests it builds on, bottom first."""
 
 
 # %% entry point
@@ -188,9 +178,6 @@ class StackCommandLine:
             CommandOption.PORCELAIN,
             action="store_true",
             help="print only 'name<TAB>pull request' per branch to promote",
-        )
-        commands.add_parser(
-            Command.RESTACK_PLAN, help="the bottom-up restack plan as JSON"
         )
         commands.add_parser(
             Command.REPARENTS,
@@ -249,29 +236,30 @@ class StackCommandLine:
         link.add_argument(CommandOption.TITLE, required=True, help="title to prefill")
         link.add_argument(CommandOption.BODY, default="", help="description to prefill")
 
-        check_move = commands.add_parser(
-            Command.CHECK_MOVE, help="may these commits move onto that branch?"
+        register = commands.add_parser(
+            Command.REGISTER,
+            help="put a pull request on top of the GitHub stack below it",
         )
-        check_move.add_argument(
-            CommandOption.ACTION,
+        register.add_argument(
+            CommandOption.REPOSITORY,
             required=True,
-            type=CommitMoveAction,
-            choices=list(CommitMoveAction),
-            help="what the move would do",
+            type=Repository.parse,
+            help="the repository the pull requests are open on, as 'owner/name'",
         )
-        check_move.add_argument(
-            CommandOption.SOURCE, required=True, help="the branch whose commits move"
-        )
-        check_move.add_argument(
-            CommandOption.DESTINATION,
+        register.add_argument(
+            CommandOption.PULL_REQUEST,
             required=True,
-            help="the branch they would land on",
+            type=int,
+            help="the pull request to put on top",
         )
-        check_move.add_argument(
-            CommandOption.DESTINATION_REMOTE,
-            required=True,
-            help="the remote holding the destination",
+        register.add_argument(
+            CommandOption.BELOW,
+            nargs="*",
+            type=int,
+            default=[],
+            help="the pull requests it builds on, bottom first",
         )
+
         return parser
 
     @staticmethod
@@ -319,6 +307,13 @@ class StackCommandLine:
                 upstream_repository=arguments.upstream,
             ).print_settings()
             return StackExitCode.SUCCESS
+        if command is Command.REGISTER:
+            StackRegistration(
+                GitHubRepository.from_environment(arguments.repository),
+                tuple(arguments.below),
+                arguments.pull_request,
+            ).print_registration()
+            return StackExitCode.SUCCESS
         PromotionLink.build(
             Configuration.load(), arguments.branch, arguments.title, arguments.body
         ).print_url()
@@ -335,15 +330,6 @@ class StackCommandLine:
         :param stack: The derived stack.
         :return: The process exit code.
         """
-        if command is Command.CHECK_MOVE:
-            return CommitMoveChecks.of_checkout(stack).print_verdict(
-                ProposedCommitMove(
-                    action=arguments.action,
-                    source=arguments.source,
-                    destination=arguments.destination,
-                    destination_remote=arguments.destination_remote,
-                ),
-            )
         report = StackReport(stack)
         reporters = {
             Command.STATUS: report.print_status,
@@ -353,7 +339,6 @@ class StackCommandLine:
                 if arguments.porcelain
                 else report.print_next
             ),
-            Command.RESTACK_PLAN: report.print_restack_plan,
             Command.REPARENTS: report.print_reparents,
             Command.LANDED: report.print_landed,
         }

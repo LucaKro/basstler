@@ -68,6 +68,18 @@ class GitHubCredentialVariable(EnvironmentVariable):
         return next((token for variable in cls if (token := variable.read())), None)
 
 
+class GitHubCommandLineVariable(EnvironmentVariable):
+    """
+    The variables the ``gh`` CLI and its extensions read besides a token.
+    """
+
+    REPOSITORY = "GH_REPO"
+    """
+    The ``owner/name`` every API call is made against, instead of a repository guessed
+    from the checkout's remotes.
+    """
+
+
 class GitHubActionsVariable(EnvironmentVariable):
     """
     The variables a GitHub Actions runner sets for the steps it runs.

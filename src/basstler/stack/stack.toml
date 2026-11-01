@@ -8,7 +8,8 @@
 # The stack itself (which branches exist, how they depend on each other, and their review state) is
 # read live from GitHub, not declared here:
 #
-#   * the dependency TREE  = each fork PR's BASE branch (base = parent). Set it on GitHub.
+#   * the stack's layers   = a GitHub stacked pull request on the fork (`gh stack`): each layer's
+#                            pull request is based on the branch of the one below it.
 #   * draft <-> ready      = the fork PR's draft toggle. Un-draft to approve for review.
 #   * in-review            = an open upstream PR opened from the branch (read by the board
 #                            export); a pass mirrors it as the `in_review_label` and a link
@@ -19,7 +20,6 @@
 #                            the branch from promotion until cleared).
 
 in_review_label = "in-review"  # fork-PR label a pass sets while an upstream PR is open
-rebase_label = "rebase"        # fork-PR label opting a branch into rebase instead of the default merge
 needs_resolution_label = "needs-resolution"  # set by a maintenance pass on a delegated restack conflict
 # fork_repository: deliberately unset - the fork is derived from `fork_remote`'s URL, so this file
 # names nobody's fork. Set it (in a personal override) only for a checkout whose fork remote is not

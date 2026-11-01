@@ -1,6 +1,6 @@
 """
 Tests for the stack derived from an in-memory board export: branch status, ordering,
-promotion policy and the restack plan.
+promotion policy and the lines a restack cascades.
 
 The data layer is injected - :meth:`Stack.build` takes a merged-branch predicate - so
 none of these touch git or the network.
@@ -20,9 +20,7 @@ from basstler.locations import RepositoryStateLocation
 from basstler.stack.model import (
     BoardKey,
     BranchStatus,
-    IntegrationStrategy,
     PullRequest,
-    RestackPlanEntry,
 )
 from basstler.upstream_reviews.vocabulary import RollupState
 
@@ -117,35 +115,6 @@ def test_merged_derived_from_predicate_not_labels():
         merged={StackBranch.LANDED},
     )
     assert stack.branches[0].status == BranchStatus.MERGED
-
-
-def test_rebase_label_sets_strategy():
-    stack = build(
-        [
-            PullRequest(
-                1,
-                StackBranch.FEATURE,
-                StackBranch.BASE,
-                draft=True,
-                labels=[StackLabel.REBASE],
-                head_repository=StackRepository.FORK.value.full_name,
-            )
-        ]
-    )
-    assert stack.branches[0].strategy == IntegrationStrategy.REBASE
-    stack = build(
-        [
-            PullRequest(
-                1,
-                StackBranch.FEATURE,
-                StackBranch.BASE,
-                draft=True,
-                labels=[],
-                head_repository=StackRepository.FORK.value.full_name,
-            )
-        ]
-    )
-    assert stack.branches[0].strategy == IntegrationStrategy.MERGE
 
 
 # %% ordering: parent before child, even when declared out of order
@@ -420,10 +389,22 @@ def test_the_board_reads_the_check_state_back_as_its_verdict(
     assert PullRequest.read_board(board) == [written]
 
 
-# %% restack plan
+# %% the lines a restack cascades
 
 
-def test_restack_plan_excludes_merged_only():
+def layers_of(stack, stacked_on: str | None = None) -> list[tuple[str, list[str]]]:
+    """
+    :param stack: A derived stack.
+    :param stacked_on: The branch whose subtree to cover, or ``None`` for every branch.
+    :return: Each line's trunk and layer names, bottom first.
+    """
+    return [
+        (line.trunk, [branch.name for branch in line.layers])
+        for line in stack.linear_stacks(stacked_on)
+    ]
+
+
+def test_a_line_leaves_out_what_has_landed_and_keeps_what_is_under_review():
     pull_requests = [
         PullRequest(
             1,
@@ -448,39 +429,32 @@ def test_restack_plan_excludes_merged_only():
             head_repository=StackRepository.FORK.value.full_name,
         ),
     ]
-    plan = build(pull_requests, merged={StackBranch.LANDED}).restack_plan()
-    names = [entry.branch for entry in plan]
-    assert StackBranch.LANDED not in names
-    assert names == [
-        StackBranch.UNDER_REVIEW,
-        StackBranch.WORK_IN_PROGRESS,
-    ]  # in-review included, parent before child
+    stack = build(pull_requests, merged={StackBranch.LANDED})
+
+    assert layers_of(stack) == [
+        (StackBranch.BASE, [StackBranch.UNDER_REVIEW, StackBranch.WORK_IN_PROGRESS])
+    ]
 
 
-def test_restack_plan_carries_parent_and_strategy():
+def test_a_branch_whose_parent_has_no_pull_request_is_based_on_that_parent():
     pull_requests = [
         PullRequest(
             2,
             StackBranch.WORK_IN_PROGRESS,
             StackBranch.OFF_BOARD_PARENT,
             draft=True,
-            labels=[StackLabel.REBASE],
             head_repository=StackRepository.FORK.value.full_name,
         )
     ]
-    plan = build(pull_requests).restack_plan()
-    assert plan == [
-        RestackPlanEntry(
-            branch=StackBranch.WORK_IN_PROGRESS,
-            parent=StackBranch.OFF_BOARD_PARENT,
-            strategy=IntegrationStrategy.REBASE,
-        )
+
+    assert layers_of(build(pull_requests)) == [
+        (StackBranch.OFF_BOARD_PARENT, [StackBranch.WORK_IN_PROGRESS])
     ]
 
 
-def test_restack_plan_reparents_child_of_merged_parent_onto_base():
-    # parent merged into main -> its commits are in the base, so the child is reparented
-    # onto main (the maintenance skill mirrors this by retargeting the child PR's base on GitHub).
+def test_a_child_of_a_landed_parent_starts_a_line_on_the_base():
+    # Its parent's commits are in the base, so the child is rebased onto the base (the
+    # maintenance skill mirrors this by retargeting the child pull request's base).
     pull_requests = [
         PullRequest(
             1,
@@ -497,25 +471,50 @@ def test_restack_plan_reparents_child_of_merged_parent_onto_base():
             head_repository=StackRepository.FORK.value.full_name,
         ),
     ]
-    plan = build(pull_requests, merged={StackBranch.PARENT}).restack_plan()
-    assert plan == [
-        RestackPlanEntry(
-            branch=StackBranch.CHILD,
-            parent=StackBranch.BASE,
-            strategy=IntegrationStrategy.MERGE,
-        )
+    stack = build(pull_requests, merged={StackBranch.PARENT})
+
+    assert layers_of(stack) == [(StackBranch.BASE, [StackBranch.CHILD])]
+
+
+def test_a_parent_with_two_children_continues_its_line_with_the_first():
+    # A GitHub stack is a single line, so the second child is a line of its own based on
+    # the parent's branch.
+    pull_requests = [
+        PullRequest(
+            1,
+            StackBranch.PARENT,
+            StackBranch.BASE,
+            draft=False,
+            head_repository=StackRepository.FORK.value.full_name,
+        ),
+        PullRequest(
+            2,
+            StackBranch.CHILD,
+            StackBranch.PARENT,
+            draft=False,
+            head_repository=StackRepository.FORK.value.full_name,
+        ),
+        PullRequest(
+            3,
+            StackBranch.SIBLING,
+            StackBranch.PARENT,
+            draft=False,
+            head_repository=StackRepository.FORK.value.full_name,
+        ),
+    ]
+
+    assert layers_of(build(pull_requests)) == [
+        (StackBranch.BASE, [StackBranch.PARENT, StackBranch.CHILD]),
+        (StackBranch.PARENT, [StackBranch.SIBLING]),
     ]
 
 
 # %% what is stacked on one branch
 
 
-def a_three_deep_stack(
-    merged: Container[str] = frozenset(), rebasing: Container[str] = frozenset()
-):
+def a_three_deep_stack(merged: Container[str] = frozenset()):
     """
     :param merged: Which of its branches have already landed upstream.
-    :param rebasing: Which of them carry the label authorising a rebase.
     :return: The chain of three, beside the branch cut from the base.
     """
     configuration = make_configuration()
@@ -526,7 +525,6 @@ def a_three_deep_stack(
             branch,
             parent,
             draft=True,
-            labels=[configuration.rebase_label] if branch in rebasing else [],
             head_repository=StackRepository.FORK.value.full_name,
         )
 
@@ -572,41 +570,20 @@ def test_a_chain_is_stacked_only_up_to_the_branch_that_has_landed():
     assert stack.branches_stacked_on(StackBranch.PARENT) == []
 
 
-# %% the restack plan for one subtree
+# %% the lines of one subtree
 
 
-def test_a_named_subtree_plans_only_what_is_stacked_on_it():
-    plan = a_three_deep_stack().restack_plan(stacked_on=StackBranch.PARENT)
-    assert plan == [
-        RestackPlanEntry(
-            branch=StackBranch.CHILD,
-            parent=StackBranch.PARENT,
-            strategy=IntegrationStrategy.MERGE,
-        ),
-        RestackPlanEntry(
-            branch=StackBranch.GRANDCHILD,
-            parent=StackBranch.CHILD,
-            strategy=IntegrationStrategy.MERGE,
-        ),
+def test_a_named_subtree_is_one_line_based_on_the_named_branch():
+    assert layers_of(a_three_deep_stack(), stacked_on=StackBranch.PARENT) == [
+        (StackBranch.PARENT, [StackBranch.CHILD, StackBranch.GRANDCHILD])
     ]
 
 
-def test_naming_no_subtree_plans_the_whole_board():
-    plan = a_three_deep_stack().restack_plan()
-    assert [entry.branch for entry in plan] == [
-        StackBranch.PARENT,
-        StackBranch.CHILD,
-        StackBranch.GRANDCHILD,
-        StackBranch.OFF_THE_CHAIN,
-    ]
-
-
-def test_a_subtree_carries_each_branch_own_integration_strategy():
-    stack = a_three_deep_stack(rebasing={StackBranch.CHILD})
-
-    plan = stack.restack_plan(stacked_on=StackBranch.PARENT)
-
-    assert [entry.strategy for entry in plan] == [
-        IntegrationStrategy.REBASE,
-        IntegrationStrategy.MERGE,
+def test_naming_no_subtree_covers_the_whole_board():
+    assert layers_of(a_three_deep_stack()) == [
+        (
+            StackBranch.BASE,
+            [StackBranch.PARENT, StackBranch.CHILD, StackBranch.GRANDCHILD],
+        ),
+        (StackBranch.BASE, [StackBranch.OFF_THE_CHAIN]),
     ]

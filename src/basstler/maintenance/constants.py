@@ -96,25 +96,6 @@ class MaintenanceText(StrEnum):
     """
 
 
-class CommitTrailer(StrEnum):
-    """
-    The trailer keys a maintenance pass writes into the commits it makes, and later
-    recognises those commits by.
-    """
-
-    RESTACKED_PARENT = "Restacked-parent"
-    """
-    Names the parent a restack merged in, marking the merge as the restack's own rather
-    than one a person made.
-    """
-
-    RESTACKED_PARENT_COMMIT = "Restacked-parent-commit"
-    """
-    The commit of the parent a restack merged in, which a restack's own merge records as
-    its second parent.
-    """
-
-
 class MergeableState(StrEnum):
     """
     The values GitHub reports as a pull request's ``mergeable_state``.

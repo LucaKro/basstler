@@ -6,11 +6,11 @@ labels, comments and its description.
 from __future__ import annotations
 
 from basstler.maintenance.constants import MergeableState
-from basstler.maintenance.restack_procedure import restack
-from basstler.maintenance.restack_steps import RestackOutcome
+from basstler.maintenance.restack import RestackOutcome, restack
 
 from ..constants.stack import StackBranch, StackLabel
 
+from .cascade import CascadeOfPlainRebases
 from .fork import (
     StackPullRequestNumber,
     PromotionSampleText,
@@ -49,7 +49,9 @@ def test_a_conflict_labels_the_branch_and_tells_its_owner(
     board[1].session = A_SESSION_LINK
     fork = RecordingPullRequests()
 
-    outcomes = restack(a_stack(fork_checkout, board), fork_checkout.git, fork)
+    outcomes = restack(
+        a_stack(fork_checkout, board), fork_checkout.git, fork, CascadeOfPlainRebases
+    )
 
     child = next(outcome for outcome in outcomes if outcome.branch == StackBranch.CHILD)
     assert child.outcome == RestackOutcome.CONFLICT
@@ -85,6 +87,7 @@ def test_a_label_write_keeps_every_label_the_branch_already_carried(
         a_stack(fork_checkout, the_board(labels=[StackLabel.SOMEBODY_ELSES])),
         fork_checkout.git,
         fork,
+        CascadeOfPlainRebases,
     )
 
     assert fork.label_writes == [
@@ -122,6 +125,7 @@ def test_a_branch_still_conflicting_is_withheld_without_being_relabelled(
         ),
         fork_checkout.git,
         fork,
+        CascadeOfPlainRebases,
     )
 
     child = next(outcome for outcome in outcomes if outcome.branch == StackBranch.CHILD)
@@ -154,6 +158,7 @@ def test_a_branch_that_no_longer_conflicts_has_its_label_cleared_and_is_restacke
         ),
         fork_checkout.git,
         fork,
+        CascadeOfPlainRebases,
     )
 
     child = next(outcome for outcome in outcomes if outcome.branch == StackBranch.CHILD)

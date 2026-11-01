@@ -63,18 +63,6 @@ class BranchStatus(StrEnum):
         return cls.DRAFT if draft else cls.READY
 
 
-class IntegrationStrategy(StrEnum):
-    """How a branch integrates its parent's moved tip during a restack."""
-
-    MERGE = "merge"
-    """Merge the parent's tip in, replacing the merges earlier restacks left that only
-    brought in an older state of the parent, so the branch carries one such merge."""
-
-    REBASE = "rebase"
-    """Replay the branch onto the parent's tip, which rewrites published history and is
-    authorised only by the branch's own rebase label."""
-
-
 class SkipReason(StrEnum):
     """Why a pull request open on the fork is left out of the pass that maintains it."""
 
@@ -190,9 +178,6 @@ class Branch:
     status: BranchStatus
     """Lifecycle status."""
 
-    strategy: IntegrationStrategy
-    """Integration strategy onto the parent."""
-
     labels: list[str]
     """Labels carried by the pull request."""
 
@@ -244,11 +229,6 @@ class Branch:
                 is_merged(pull_request.head),
                 pull_request.upstream_pull_request is not None,
             ),
-            strategy=(
-                IntegrationStrategy.REBASE
-                if configuration.rebase_label in pull_request.labels
-                else IntegrationStrategy.MERGE
-            ),
             labels=pull_request.labels,
             skipped_pull_request=(
                 None
@@ -265,17 +245,15 @@ class Branch:
 
 
 @dataclass(frozen=True)
-class RestackPlanEntry:
-    """One entry of :meth:`Stack.restack_plan`: a branch, and what and how it is brought up to date with."""
+class LinearStack:
+    """One line of branches, each based on the one below it: the shape a GitHub stack of
+    pull requests takes, and what ``gh stack`` rebases in one cascade."""
 
-    branch: str
-    """The branch to bring up to date."""
+    trunk: str
+    """The branch the bottom layer is based on."""
 
-    parent: str
-    """The branch it is brought up to date with."""
-
-    strategy: IntegrationStrategy
-    """How it is brought up to date."""
+    layers: tuple[Branch, ...]
+    """The branches, bottom first."""
 
 
 @dataclass(frozen=True)
@@ -433,7 +411,7 @@ class Stack:
 
         A branch is stacked on another when its pull request's base is that branch,
         directly or through the branches between them - the same parent relation
-        :meth:`restack_plan` works from. A merged branch is left out along with everything
+        :meth:`linear_stacks` works from. A merged branch is left out along with everything
         only it carries, since its commits are already in the upstream base.
 
         :param branch_name: The branch whose subtree is wanted; it is never in the result.
@@ -476,11 +454,11 @@ class Stack:
             BranchStatus.MERGED,
         }
 
-    def integration_parent(self, branch: Branch) -> str:
+    def trunk_of(self, branch: Branch) -> str:
         """
         :param branch: A branch of the stack.
-        :return: What it is brought up to date with: its parent, or the upstream base
-            once that parent has landed.
+        :return: What it is rebased onto when it is the bottom layer of its line: its
+            parent, or the upstream base once that parent has landed.
         """
         if self.has_landed_upstream(branch.parent):
             return self.configuration.upstream_base
@@ -529,40 +507,37 @@ class Stack:
             if GitHubLabel.PROMOTION_LINK_SENT not in branch.labels
         ]
 
-    def restack_plan(self, stacked_on: str | None = None) -> list[RestackPlanEntry]:
-        """The bottom-up restack plan the ``restack`` workflow consumes as its arguments.
+    def linear_stacks(self, stacked_on: str | None = None) -> list[LinearStack]:
+        """Every not-yet-landed branch, split into the lines a restack cascades.
 
-        One entry per branch not yet ``merged``, in parent-before-child order. In-review
-        branches are included so they pick up a moved parent; their ``merge`` strategy never
-        rewrites their own commits, only replaces the merges earlier restacks left, so an
-        open review keeps its history.
+        A branch continues its parent's line when it is the first child the line meets,
+        parent before child; a further child of the same parent starts a line of its
+        own, based on that parent's branch. A branch whose parent is not in the plan
+        starts a line based on its :meth:`trunk_of`.
 
-        When a branch's parent has **merged** into the upstream, its commits are already in
-        the base, so the child is reparented onto the upstream base: the restack rebases it
-        there and it stops depending on a landed (and about-to-be-closed) branch. The
-        maintenance skill mirrors this by retargeting the child pull request's base to the upstream base on
-        GitHub. This holds however the parent landed - including when its own pull request
-        was closed rather than merged, leaving the board with no entry for it at all.
+        Naming a branch in *stacked_on* limits the lines to that branch's own subtree.
 
-        Naming a branch in *stacked_on* limits the plan to that branch's own subtree.
-
-        :param stacked_on: The branch whose subtree to plan, or ``None`` for every branch.
-        :return: The restack plan, one entry per planned branch.
+        :param stacked_on: The branch whose subtree to cover, or ``None`` for every
+            branch.
+        :return: The lines, each one after every line holding its trunk.
         """
         planned = (
             self.maintained_branches()
             if stacked_on is None
             else self.branches_stacked_on(stacked_on)
         )
-        return [
-            RestackPlanEntry(
-                branch=branch.name,
-                parent=self.integration_parent(branch),
-                strategy=branch.strategy,
-            )
-            for branch in planned
-            if branch.status != BranchStatus.MERGED
-        ]
+        lines: list[tuple[str, list[Branch]]] = []
+        line_of: dict[str, list[Branch]] = {}
+        for branch in planned:
+            if branch.status == BranchStatus.MERGED:
+                continue
+            line = line_of.get(branch.parent)
+            if line is None or line[-1].name != branch.parent:
+                line = []
+                lines.append((self.trunk_of(branch), line))
+            line.append(branch)
+            line_of[branch.name] = line
+        return [LinearStack(trunk, tuple(layers)) for trunk, layers in lines]
 
     def reparents(self) -> list[Reparent]:
         """Every open pull request whose base has already landed upstream.

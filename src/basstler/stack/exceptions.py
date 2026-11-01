@@ -170,3 +170,41 @@ class PromotionLinkTooLongError(StackError, ValueError):
 
     def suggest_correction(self) -> str:
         return "Shorten the title."
+
+
+# %% stacks on GitHub
+
+
+@dataclass
+class LayerTakenError(StackError, ValueError):
+    """
+    Raised when a pull request would be stacked on one that already has others stacked
+    on it.
+    """
+
+    @classproperty
+    def exit_code(cls) -> StackExitCode:
+        """:return: The status this kind of error ends a command with."""
+        return StackExitCode.LAYER_TAKEN
+
+    below: int
+    """
+    The pull request it would be stacked on.
+    """
+    above: tuple[int, ...]
+    """
+    The pull requests already stacked on that one, bottom first.
+    """
+
+    def error_message(self) -> str:
+        stacked = ", ".join(f"#{number}" for number in self.above)
+        return (
+            f"pull request #{self.below} already has {stacked} stacked on it, and a "
+            f"stack is a single line"
+        )
+
+    def suggest_correction(self) -> str:
+        return (
+            "Land one of the two first, or change the plan's depends_on so the items "
+            "build on each other in one line."
+        )

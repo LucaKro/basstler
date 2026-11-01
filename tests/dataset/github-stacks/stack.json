@@ -1,0 +1,25 @@
+{
+  "id": 9001,
+  "number": 3,
+  "node_id": "ST_kwDOA_three",
+  "url": "https://api.github.com/repos/a-fork-owner/a-fork/stacks/3",
+  "base": {"ref": "main", "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+  "open": true,
+  "created_at": "2026-10-30T12:00:00Z",
+  "pull_requests": [
+    {
+      "number": 40,
+      "state": "open",
+      "draft": false,
+      "merged_at": null,
+      "head": {"ref": "a-parent", "sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}
+    },
+    {
+      "number": 41,
+      "state": "open",
+      "draft": true,
+      "merged_at": null,
+      "head": {"ref": "a-child", "sha": "cccccccccccccccccccccccccccccccccccccccc"}
+    }
+  ]
+}

@@ -140,7 +140,6 @@ class StackSampleText(StrEnum):
 def make_configuration() -> Configuration:
     return Configuration(
         in_review_label=StackLabel.IN_REVIEW,
-        rebase_label=StackLabel.REBASE,
         needs_resolution_label=StackLabel.NEEDS_RESOLUTION,
         fork_repository=StackRepository.FORK.value,
         fork_remote=RemoteName.ORIGIN,

@@ -73,6 +73,11 @@ class SummaryLine(StrEnum):
     What became of the fork's upstream-reviews Action branch.
     """
 
+    GH_STACK = "gh stack"
+    """
+    Whether ``gh stack`` runs in the session, and whether it was just installed.
+    """
+
     PLAN_STATE_SHA = "plan state SHA"
     """
     The personal-notes commit this clone read plan state at.
@@ -220,6 +225,26 @@ class SummaryMessage(StrEnum):
     ACTION_UPDATE_FAILED = "upstream_reviews_action_line_update_failed"
     """
     The Action runs another release, and bringing it to this session's failed.
+    """
+
+    GH_STACK_READY = "gh_stack_line_ready"
+    """
+    ``gh`` already runs the gh-stack extension.
+    """
+
+    GH_STACK_INSTALLED = "gh_stack_line_installed"
+    """
+    What was missing for ``gh stack`` was just installed.
+    """
+
+    GH_STACK_INSTALLED_OFF_PATH = "gh_stack_line_installed_off_path"
+    """
+    ``gh stack`` was installed, but no later command of the session sees it.
+    """
+
+    GH_STACK_UNAVAILABLE = "gh_stack_line_unavailable"
+    """
+    ``gh stack`` does not run, and why.
     """
 
 

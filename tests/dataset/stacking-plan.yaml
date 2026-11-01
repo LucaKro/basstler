@@ -1,0 +1,93 @@
+schema_version: 1
+id: test-plan
+title: "A plan whose items build on each other"
+description: >
+  One paragraph.
+default_repository: an-owner/a-repository
+tracking_issue: 7
+
+waves:
+  - id: immediate
+    name: "Immediate"
+
+tracks:
+  - id: a-track
+    name: "A track"
+    wave: immediate
+
+items:
+  - id: a-landed-item
+    branch: stack/landed
+    title: "An item that has landed"
+    pull_request_number: 20
+    track: a-track
+    depends_on: []
+    status: done
+
+  - id: a-bottom-item
+    branch: stack/bottom
+    title: "The bottom of the line"
+    pull_request_number: 21
+    track: a-track
+    depends_on: [a-landed-item]
+    status: in progress
+
+  - id: a-middle-item
+    branch: stack/middle
+    title: "The middle of the line"
+    pull_request_number: 22
+    track: a-track
+    depends_on: [a-bottom-item, an-item-already-pruned]
+    status: in progress
+
+  - id: a-top-item
+    branch: null
+    title: "The top of the line, not started"
+    track: a-track
+    depends_on: [a-middle-item, another-plan/an-item-of-it]
+    status: not started
+
+  - id: a-sibling-item
+    branch: stack/sibling
+    title: "Beside the bottom item"
+    pull_request_number: 23
+    track: a-track
+    depends_on: []
+    status: in progress
+
+  - id: a-forking-item
+    branch: null
+    title: "Resting on two unlanded items at once"
+    track: a-track
+    depends_on: [a-bottom-item, a-sibling-item]
+    status: not started
+
+  - id: an-unstarted-item
+    branch: null
+    title: "Not started, so nothing builds on it yet"
+    track: a-track
+    depends_on: []
+    status: not started
+
+  - id: an-item-on-an-unstarted-one
+    branch: null
+    title: "Resting on an item without a branch"
+    track: a-track
+    depends_on: [an-unstarted-item]
+    status: not started
+
+  - id: an-item-elsewhere
+    branch: elsewhere/work
+    title: "In another repository"
+    repository: another-owner/another-repository
+    pull_request_number: 5
+    track: a-track
+    depends_on: []
+    status: in progress
+
+  - id: an-item-on-one-elsewhere
+    branch: null
+    title: "Resting on an item in another repository"
+    track: a-track
+    depends_on: [an-item-elsewhere]
+    status: not started

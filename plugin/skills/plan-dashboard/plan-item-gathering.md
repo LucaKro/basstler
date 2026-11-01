@@ -22,16 +22,18 @@ without asking first, rather than failing later on a branch that isn't there.
 
 When the project names an upstream (`bash "${CHECK_SETUP_SCRIPT}" --require-upstream`
 exits 0), run `/stacked-pr-maintenance` before reading anything below. It reparents,
-fast-forwards the fork's base, restacks every branch whose parent moved and promotes
-approved branches, so everything gathered afterwards is the state the work continues
-from. A project that names no upstream has nothing to fast-forward from; skip this.
+fast-forwards the fork's base, rebases every stack whose base moved with `gh stack` and
+promotes approved branches, so everything gathered afterwards is the state the work
+continues from. A project that names no upstream has nothing to fast-forward from; skip this.
 
 Then read its summary for the item's branch and the branches it is stacked on (for an
 item not started yet, the branch it will be cut from):
 
-- A conflict on one of them is the first thing to resolve. Fix it on the branch it is
-  on - a parent's conflict on that parent's own pull request - then run the pass again,
-  so the fix is carried into everything stacked on it.
+- A conflict on one of them is the first thing to resolve. Rebase that branch's stack
+  with `gh stack rebase --remote <fork-remote> <the branch>`, resolve the conflict on
+  the branch it stops on, finish with `gh stack rebase --continue` and publish with
+  `gh stack push --remote <fork-remote>` - then run the pass again, so the fix is
+  carried into everything stacked on it.
 - A conflict on a branch stacked on the item's branch stays with that branch's owner;
   the pass has already labelled it and commented on its pull request.
 

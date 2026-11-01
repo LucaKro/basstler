@@ -33,11 +33,6 @@ class StackSetting(StrEnum):
     The fork pull request label marking a branch promoted to the upstream.
     """
 
-    REBASE_LABEL = "rebase_label"
-    """
-    The label opting a branch into rebasing instead of merging.
-    """
-
     NEEDS_RESOLUTION_LABEL = "needs_resolution_label"
     """
     The label withholding a branch from promotion until a conflict is resolved.

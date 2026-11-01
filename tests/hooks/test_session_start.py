@@ -25,6 +25,7 @@ import pytest
 from basstler.locations import BasstlerVariable, PluginLocation, ProjectLocation
 from basstler.repository import Repository
 from basstler.shell_configuration import ShellConfigurationFunction
+from basstler.stack.cascading_rebase import StackExtensionArgument
 from basstler.upstream_reviews.action.branch import InstallationState
 from basstler.plan.model import PlanDocument
 from basstler.plan.model import ItemStatus, ManifestKey, PlanManifest
@@ -54,6 +55,22 @@ from .session_start_summary import (
     summary_message,
     summary_value,
 )
+
+
+class GitHubStubVariable(StrEnum):
+    """
+    The environment variables the ``gh`` stub reads to answer for its extensions.
+    """
+
+    EXTENSIONS = "STUB_GH_EXTENSIONS"
+    """
+    The extensions it lists as installed, one per line.
+    """
+
+    VERSION = "STUB_GH_VERSION"
+    """
+    The version it reports.
+    """
 
 
 class StubVariable(StrEnum):
@@ -187,6 +204,7 @@ def session_start_repository(
         PluginLocation.SESSION_START_MESSAGES_SCRIPT.name,
         PluginLocation.SESSION_START_SCRIPT.name,
         PluginLocation.SETUP_CHECK_SCRIPT.name,
+        PluginLocation.STACK_EXTENSION_INSTALLATION_SCRIPT.name,
     )
     scratch_repository.install_package()
     scratch_repository.install_package_environment()
@@ -1556,6 +1574,39 @@ def test_installs_no_action_on_a_fork_that_has_none(
     assert summary_value(
         result.stdout, SummaryLine.UPSTREAM_REVIEWS_ACTION
     ) == summary_message(SummaryMessage.ACTION_NOT_INSTALLED)
+
+
+# %% gh stack
+
+
+def test_reports_whether_gh_stack_runs(
+    session_start_repository: ScratchRepository,
+    stub_bin: ExecutableStubDirectory,
+):
+    """
+    The maintenance pass and the plan item skills rebase stacks with it, so a session
+    learns at its start whether it can.
+    """
+    stub_bin.install(StackExtensionArgument.EXECUTABLE)
+    gh_version = "2.90.0"
+
+    result = publish_and_run(
+        session_start_repository,
+        environment={
+            SearchPathVariable.EXECUTABLE_SEARCH_PATH: (
+                stub_bin.ahead_of_inherited_path()
+            ),
+            GitHubStubVariable.EXTENSIONS: (
+                f"{StackExtensionArgument.EXECUTABLE} {StackExtensionArgument.STACK}"
+            ),
+            GitHubStubVariable.VERSION: gh_version,
+        },
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert summary_value(result.stdout, SummaryLine.GH_STACK) == summary_message(
+        SummaryMessage.GH_STACK_READY, gh_version
+    )
 
 
 # %% every message renders

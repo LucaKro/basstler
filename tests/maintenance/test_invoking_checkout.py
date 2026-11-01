@@ -10,13 +10,12 @@ from pathlib import Path
 import pytest
 
 import basstler.maintenance.__main__
-import basstler.maintenance.restack_procedure
-from basstler.maintenance.restack_procedure import restack
-from basstler.maintenance.restack_steps import RestackOutcome
+from basstler.maintenance.restack import RestackOutcome, restack
 
 from ..constants.paths import RepositoryLocation
 from ..constants.stack import RemoteName, StackBranch
 
+from .cascade import CascadeOfPlainRebases
 from .fork import (
     UPSTREAM_BASE,
     FixtureFile,
@@ -84,7 +83,10 @@ def test_a_restack_leaves_the_invoking_checkout_on_its_own_branch(
     a_stack_cut_before_the_tooling_landed(fork_checkout)
 
     restack(
-        a_stack(fork_checkout, the_board()), fork_checkout.git, RecordingPullRequests()
+        a_stack(fork_checkout, the_board()),
+        fork_checkout.git,
+        RecordingPullRequests(),
+        CascadeOfPlainRebases,
     )
 
     assert fork_checkout.run_git("branch", "--show-current") == UPSTREAM_BASE
@@ -100,7 +102,10 @@ def test_a_restack_keeps_what_the_branches_it_switches_to_do_not_have(
     tooling = a_stack_cut_before_the_tooling_landed(fork_checkout)
 
     restack(
-        a_stack(fork_checkout, the_board()), fork_checkout.git, RecordingPullRequests()
+        a_stack(fork_checkout, the_board()),
+        fork_checkout.git,
+        RecordingPullRequests(),
+        CascadeOfPlainRebases,
     )
 
     assert tooling.read_text() == TOOLING_CONTENT
@@ -124,7 +129,10 @@ def test_a_restack_publishes_a_branch_the_caller_is_sitting_on(
     before = fork_checkout.published_commit(RemoteName.ORIGIN, StackBranch.CHILD)
 
     outcomes = restack(
-        a_stack(fork_checkout, the_board()), fork_checkout.git, RecordingPullRequests()
+        a_stack(fork_checkout, the_board()),
+        fork_checkout.git,
+        RecordingPullRequests(),
+        CascadeOfPlainRebases,
     )
 
     child = next(outcome for outcome in outcomes if outcome.branch == StackBranch.CHILD)
@@ -148,7 +156,12 @@ def test_the_caller_holds_no_branch_while_a_restack_runs(fork_checkout: ForkChec
     )
     fork = PullRequestsWatchingTheCaller(caller=fork_checkout.git)
 
-    restack(a_stack(fork_checkout, the_board()), fork_checkout.git, fork)
+    restack(
+        a_stack(fork_checkout, the_board()),
+        fork_checkout.git,
+        fork,
+        CascadeOfPlainRebases,
+    )
 
     assert fork.branches_held_while_restacking == [""]
 
@@ -165,7 +178,10 @@ def test_a_restack_gives_back_the_branch_the_caller_lent_it(
     fork_checkout.run_git("checkout", "--quiet", StackBranch.CHILD)
 
     restack(
-        a_stack(fork_checkout, the_board()), fork_checkout.git, RecordingPullRequests()
+        a_stack(fork_checkout, the_board()),
+        fork_checkout.git,
+        RecordingPullRequests(),
+        CascadeOfPlainRebases,
     )
 
     assert fork_checkout.run_git("branch", "--show-current") == StackBranch.CHILD
@@ -175,7 +191,10 @@ def test_a_restack_leaves_no_worktree_of_its_own_behind(fork_checkout: ForkCheck
     a_stack_cut_before_the_tooling_landed(fork_checkout)
 
     restack(
-        a_stack(fork_checkout, the_board()), fork_checkout.git, RecordingPullRequests()
+        a_stack(fork_checkout, the_board()),
+        fork_checkout.git,
+        RecordingPullRequests(),
+        CascadeOfPlainRebases,
     )
 
     listed = fork_checkout.run_git("worktree", "list", "--porcelain")
@@ -206,6 +225,7 @@ def test_a_restack_that_raises_still_takes_its_worktree_with_it(
             a_stack(fork_checkout, the_board()),
             fork_checkout.git,
             PullRequestsRefusingToReport(),
+            CascadeOfPlainRebases,
         )
 
     listed = fork_checkout.run_git("worktree", "list", "--porcelain")

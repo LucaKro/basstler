@@ -379,7 +379,7 @@ PROGRESS_NOTES_MODULE="basstler.personal_notes.progress_notes"
 # basstler.plan.updates_since_support: renders the plan-state delta
 # plan-updates-since.sh reports.
 PLAN_UPDATES_SINCE_SUPPORT_MODULE="basstler.plan.updates_since_support"
-# stack: read-only stacked-PR status tool (status/check/next/restack-plan)
+# stack: stacked-PR status tool (status/check/next/register)
 # - see its own module docstring and STACK_DIRECTORY/README.md.
 STACK_MODULE="basstler.stack"
 # maintenance: the deterministic maintenance executor a stacked-PR pass
@@ -459,6 +459,9 @@ SETUP_PERSONAL_NOTES_DIRECTORY="${PLUGIN_ROOT}/skills/setup-personal-notes"
 # the single source of truth for that question, so no caller re-implements
 # "is the notes branch there?" with its own git plumbing.
 CHECK_SETUP_SCRIPT="${HOOKS_DIR}/check-setup.sh"
+# INSTALL_GH_STACK_SCRIPT: makes `gh stack` runnable in the session - run by
+# session-start.sh, which prints its verdict.
+INSTALL_GH_STACK_SCRIPT="${HOOKS_DIR}/install-gh-stack.sh"
 # prerequisite-check.md: the shared "run check-setup.sh, run
 # /setup-personal-notes if it fails" procedure that plan-create,
 # plan-dashboard, plan-item-kickoff and plan-item-resolve each reference in
@@ -631,6 +634,23 @@ PLUGIN_MANIFEST="${PLUGIN_ROOT}/.claude-plugin/plugin.json"
 # BASSTLER_REPOSITORY_URL - the one the package is installed at, read once per
 # session start rather than by every caller.
 BASSTLER_RELEASE_FILE="${BASSTLER_HOME}/release"
+
+# %% GitHub's stack extension
+
+# GH_STACK_TOOLS_DIRECTORY: where install-gh-stack.sh puts the `gh` and the
+# gh-stack extension it installs, beside the package's environment.
+GH_STACK_TOOLS_DIRECTORY="${GH_STACK_TOOLS_DIRECTORY:-${BASSTLER_HOME}/tools}"
+# GH_STACK_EXTENSION_DIRECTORY: where install-gh-stack.sh clones and builds the
+# extension.
+GH_STACK_EXTENSION_DIRECTORY="${GH_STACK_TOOLS_DIRECTORY}/gh-stack"
+# GH_STACK_GH_VERSION: the oldest `gh` gh-stack runs under, and the one
+# install-gh-stack.sh downloads where the session has none as recent.
+GH_STACK_GH_VERSION="${GH_STACK_GH_VERSION:-2.90.0}"
+# GH_STACK_SOURCE: the gh-stack extension's repository, built from source where
+# `gh extension install` is refused.
+GH_STACK_SOURCE="${GH_STACK_SOURCE:-https://github.com/github/gh-stack}"
+# GH_RELEASES: where `gh` release archives are downloaded from.
+GH_RELEASES="${GH_RELEASES:-https://github.com/cli/cli/releases/download}"
 
 # latest_basstler_release: prints the highest v<major>.<minor>.<patch> tag
 # BASSTLER_REPOSITORY_URL has; fails when it cannot be read or has none.

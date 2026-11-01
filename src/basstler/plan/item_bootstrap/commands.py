@@ -15,6 +15,10 @@ from basstler.command_line import Command
 from basstler.plan.item_bootstrap.blockers import BranchReport, OwnedBlocker
 from basstler.plan.item_bootstrap.check import ItemCheckRequest, StalenessReport
 from basstler.plan.item_bootstrap.opening import WorkOpener, WorkOpenRequest
+from basstler.plan.item_bootstrap.placement import (
+    ItemPlacementRequest,
+    StackPlacement,
+)
 from basstler.plan.item_bootstrap.record import ItemRecordRequest
 from basstler.plan.item_bootstrap.report import BootstrapReport, OperationReport
 from basstler.plan.item_bootstrap.update import ItemUpdateRequest
@@ -85,6 +89,27 @@ class RecordCommand(BootstrapCommand):
             title=arguments.title,
             track=arguments.track,
         ).record(project_root)
+
+
+@dataclass(frozen=True)
+class PlaceCommand(BootstrapCommand):
+    """
+    Names the branch an item's branch goes on: the top of the line of unlanded items it
+    builds on.
+    """
+
+    @classproperty
+    def description(cls) -> str:
+        return "Name the branch the item's branch goes on, and the stack below it"
+
+    def declare_arguments(self, parser: argparse.ArgumentParser) -> None:
+        parser.add_argument("--plan", required=True)
+        parser.add_argument("--item", required=True)
+
+    def run(self, arguments: argparse.Namespace, project_root: Path) -> StackPlacement:
+        return ItemPlacementRequest(
+            plan_identifier=arguments.plan, item_identifier=arguments.item
+        ).place(project_root)
 
 
 @dataclass(frozen=True)

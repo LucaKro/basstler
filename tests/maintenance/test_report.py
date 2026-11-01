@@ -11,11 +11,9 @@ from dataclasses import asdict
 
 import pytest
 
-from basstler.exceptions import UnresolvableReferenceError
 from basstler.exit_codes import StackExitCode
 from basstler.repository import Repository
 from basstler.stack.model import (
-    IntegrationStrategy,
     PullRequest,
     SkippedPullRequest,
     SkipReason,
@@ -37,14 +35,15 @@ from basstler.maintenance.fast_forward import (
 )
 from basstler.maintenance.promotion import PromotionSummaries
 from basstler.maintenance.report import MaintenanceReport, MaintenanceReportKey
-from basstler.maintenance.restack_procedure import restack
-from basstler.maintenance.restack_steps import (
+from basstler.maintenance.restack import (
+    restack,
     BranchOutcome,
     RestackOutcome,
 )
 
 from ..constants.stack import RemoteName, StackBranch
 
+from .cascade import CascadeOfPlainRebases
 from .fork import (
     StackPullRequestNumber,
     PullRequestHeadRepository,
@@ -79,7 +78,9 @@ def test_the_report_serialises_every_command_s_outcome(fork_checkout: ForkChecko
     report = MaintenanceReport.of_pass(
         stack,
         fast_forward(make_configuration(), fork_checkout.git),
-        restack(stack, fork_checkout.git, RecordingPullRequests()),
+        restack(
+            stack, fork_checkout.git, RecordingPullRequests(), CascadeOfPlainRebases
+        ),
     )
     document = json.loads(report.as_json())
 
@@ -229,21 +230,6 @@ def test_loading_the_stack_fetches_a_base_no_open_pull_request_has_as_its_head(
     )
 
 
-def test_comparing_against_a_reference_git_cannot_resolve_names_that_reference(
-    fork_checkout: ForkCheckout,
-):
-    fork_checkout.branch_from(StackBranch.PARENT, UPSTREAM_BASE)
-    missing = f"{RemoteName.ORIGIN}/{StackBranch.LONG_LIVED_BASE}"
-
-    with pytest.raises(UnresolvableReferenceError) as raised:
-        fork_checkout.git.adds_only_merges(
-            f"{RemoteName.ORIGIN}/{StackBranch.PARENT}", missing
-        )
-
-    assert raised.value.reference == missing
-    assert raised.value.exit_code == StackExitCode.GIT_COMMAND_FAILED
-
-
 @pytest.mark.parametrize(
     "head_repository, reason",
     [
@@ -340,11 +326,7 @@ def a_report(
         fast_forward=FastForwardReport(
             fast_forward_outcome, "upstream/main", "origin/main", "a-commit"
         ),
-        restacked=(
-            BranchOutcome(
-                "a-branch", "main", IntegrationStrategy.MERGE, restack_outcome
-            ),
-        ),
+        restacked=(BranchOutcome("a-branch", "main", restack_outcome),),
         promoted=(),
         promotion_labels_cleared=(),
         reparents=(),
@@ -443,13 +425,3 @@ def test_a_clean_run_says_nothing_about_its_status(fork_checkout: ForkCheckout):
 
     assert result.returncode == StackExitCode.SUCCESS
     assert "success" not in result.stderr
-
-
-def test_a_refused_move_keeps_its_own_status():
-    """
-    Distinct from a branch needing attention: the branch is fine and the move was wrong.
-    """
-    assert (
-        a_report(restack_outcome=RestackOutcome.REFUSED).exit_code
-        == StackExitCode.MOVE_REFUSED
-    )

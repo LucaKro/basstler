@@ -89,7 +89,7 @@ def test_the_export_reads_each_field_out_of_the_shape_the_api_returns_it_in():
                 head=StackBranch.CHILD,
                 base=StackBranch.PARENT,
                 draft=True,
-                labels=[StackLabel.REBASE],
+                labels=[StackLabel.SOMEBODY_ELSES],
                 body=f"see {A_SESSION_LINK}",
             )
         ]
@@ -100,7 +100,7 @@ def test_the_export_reads_each_field_out_of_the_shape_the_api_returns_it_in():
     assert exported.head == StackBranch.CHILD
     assert exported.base == StackBranch.PARENT
     assert exported.draft is True
-    assert exported.labels == [StackLabel.REBASE]
+    assert exported.labels == [StackLabel.SOMEBODY_ELSES]
     assert exported.session == A_SESSION_LINK
 
 
@@ -188,8 +188,8 @@ def test_every_worktree_of_a_repository_shares_one_board_outside_its_work_trees(
     fork_checkout: ForkCheckout, tmp_path: Path
 ):
     """
-    ``board --write`` from one worktree and ``check-move`` from another read one file,
-    which no checkout can commit and no install of the package holds.
+    ``board --write`` from one worktree and ``status`` from another read one file, which
+    no checkout can commit and no install of the package holds.
     """
     worktree = tmp_path / "another-worktree"
     fork_checkout.git.run("worktree", "add", "--quiet", "--detach", str(worktree))

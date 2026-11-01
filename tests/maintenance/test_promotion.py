@@ -9,7 +9,6 @@ import argparse
 import pytest
 
 import basstler.maintenance.__main__
-import basstler.maintenance.restack_procedure
 from basstler.github_labels import GitHubLabel
 from basstler.maintenance.commands import RunReportCommand
 from basstler.maintenance.constants import MaintenanceText
@@ -20,7 +19,6 @@ from basstler.maintenance.promotion import (
     clear_spent_promotion_labels,
     promote,
 )
-from basstler.maintenance.restack_procedure import restack
 from basstler.stack.promotion_link import PromotionLinkParameter
 
 from ..constants.paths import DatasetLocation
@@ -280,27 +278,3 @@ def test_a_whole_pass_promotes_with_the_summaries_it_was_given(
         .for_pull_request(written.pull_request_number)
         .title
     )
-
-
-def test_a_branch_no_step_concludes_is_an_error_rather_than_a_silent_pass(
-    fork_checkout: ForkCheckout, monkeypatch: pytest.MonkeyPatch
-):
-    """
-    The last step always concludes a branch, so a branch reaching the end of the steps
-    means the procedure lost it - which must not read as a branch nothing happened to.
-    """
-    a_parent_and_child(fork_checkout)
-    monkeypatch.setattr(
-        basstler.maintenance.restack_procedure, "restack_steps", lambda: ()
-    )
-
-    with pytest.raises(
-        basstler.maintenance.restack_procedure.RestackConcludedNothingError
-    ) as raised:
-        restack(
-            a_stack(fork_checkout, the_board()),
-            fork_checkout.git,
-            RecordingPullRequests(),
-        )
-
-    assert raised.value.branch in {StackBranch.PARENT, StackBranch.CHILD}

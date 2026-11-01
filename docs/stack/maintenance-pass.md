@@ -31,7 +31,8 @@ ends its turn.
 
 Claude Code's Workflow tool - not a GitHub Actions workflow - fans work out to subagents; for a
 short sequence of git and API calls that only multiplies the chance of two agents pushing the same
-branch. Nothing in a pass needs it: the executor fast-forwards and merges with plain git.
+branch. Nothing in a pass needs it: the executor fast-forwards with plain git and rebases with
+`gh stack`.
 
 ## Why reparenting comes first
 
@@ -100,9 +101,10 @@ Re-deriving the summary, re-reading the full report, or running the individual c
 does the same work twice and can disagree with what actually ran. `--json` exists for tooling; a
 session never needs it.
 
-`integration-failed` means integrating the parent failed without conflicting on anything - an
-untracked file in the way, unrelated histories, a reference that does not resolve. The branch is not
-what needs fixing, so its owner is deliberately not told and it is never labelled.
+`integration-failed` means rebasing onto the parent failed without conflicting on anything -
+`gh stack` not runnable, a branch checked out in another worktree, a rebase already in progress.
+The branch is not what needs fixing, so its owner is deliberately not told and it is never
+labelled.
 
 A `skipped` pull request has a head the credential cannot push to (`head-on-another-fork`) or one
 whose repository is gone (`head-repository-deleted`). Its base is still on the fork, so the session still
@@ -116,11 +118,19 @@ labels the pull request carries now.
 
 ## Force-pushes
 
-A branch with an open upstream pull request is never force-pushed unless it carries `rebase`. The
-executor's restack is the one exception: it replaces the merges earlier passes left at a branch's
-tip - only those carrying its `Restacked-parent:` and `Restacked-parent-commit:` trailers, never a
-merge made by hand - with a single new one, under a lease - see
-[One restack merge per branch](README.md#one-restack-merge-per-branch).
+A stack is kept current the way GitHub's own stacks are: every layer is rebased onto the one below
+it and force-pushed, a branch under upstream review included. Each push carries a lease of its own,
+so it is refused rather than forced over a push the pass did not see - the branch's owner pushed
+in the meantime - and the branch is reported `push-rejected`. See
+[Restacking with `gh stack`](README.md#restacking-with-gh-stack).
+
+## Why a stack is a single line
+
+GitHub's stacks are a line of pull requests, each based on the branch of the one below it, so a
+plan item that rests on two unlanded items at once, or a pull request stacked on one that already
+carries another, is refused when it is placed rather than stacked on an arbitrary one of them. A
+parent with two children on the fork is still restacked: the second child is a line of its own,
+based on the parent's branch.
 
 ## Reporting a conflict
 

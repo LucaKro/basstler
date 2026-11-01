@@ -22,13 +22,12 @@ from basstler.maintenance.finish_summary import (
 )
 from basstler.maintenance.promotion import Promotion, PromotionSummaries
 from basstler.maintenance.report import MaintenanceReport
-from basstler.maintenance.restack_steps import BranchOutcome, RestackOutcome
+from basstler.maintenance.restack import BranchOutcome, RestackOutcome
 from basstler.maintenance.upstream_pull_request_synchronization import (
     UpstreamPullRequestSynchronizationAction,
     UpstreamPullRequestSynchronizationChange,
 )
 from basstler.stack.model import (
-    IntegrationStrategy,
     PullRequest,
     Reparent,
     SkippedPullRequest,
@@ -102,9 +101,7 @@ def an_outcome(
     :param details: Any further :class:`BranchOutcome` fields.
     :return: The outcome, integrating the branch's parent by merge.
     """
-    return BranchOutcome(
-        branch, UPSTREAM_BASE, IntegrationStrategy.MERGE, outcome, **details
-    )
+    return BranchOutcome(branch, UPSTREAM_BASE, outcome, **details)
 
 
 def a_promotion(body_was_truncated: bool = False) -> Promotion:
