@@ -30,7 +30,7 @@ from basstler.dashboard.cards import (
 from basstler.dashboard.plan import Item, Plan, Track
 from basstler.dashboard.publication import DashboardArtifact, PublicationField
 from basstler.exceptions import PlanValidationError
-from basstler.github_labels import GitHubLabel
+from basstler.workflow_labels import WorkflowLabel
 from basstler.locations import DashboardArtifactFile, DashboardTemplate
 from basstler.plan.command_arguments import PlanCommandArguments
 from basstler.plan.dependencies import DependencyResolver, PlanDirectory
@@ -427,7 +427,7 @@ class DashboardRenderer(TemplatePage):
         pull_request = self._pull_request_record_of(item)
         return (
             pull_request is not None
-            and GitHubLabel.BUG in pull_request.identified_labels
+            and WorkflowLabel.BUG in pull_request.identified_labels
         )
 
     @staticmethod

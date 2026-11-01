@@ -12,7 +12,7 @@ from enum import StrEnum
 
 import pytest
 
-from basstler.github_labels import GitHubLabel
+from basstler.workflow_labels import WorkflowLabel
 from basstler.maintenance.commands import (
     PrepareCommand,
     PreparationKey,
@@ -117,7 +117,7 @@ def test_a_branch_whose_link_a_pass_recorded_is_not_described_again(
     """
     a_parent_and_child(fork_checkout)
     board = the_board()
-    board[0].labels.append(GitHubLabel.PROMOTION_LINK_SENT)
+    board[0].labels.append(WorkflowLabel.PROMOTION_LINK_SENT)
 
     assert a_context_reader(fork_checkout, RecordingPullRequests(), board).read() == []
 

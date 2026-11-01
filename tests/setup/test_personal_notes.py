@@ -20,7 +20,7 @@ import pytest
 
 from basstler.exceptions import MalformedEmailAddressError
 from basstler.exit_codes import PersonalNotesSetupExitCode
-from basstler.github_labels import GitHubLabel
+from basstler.workflow_labels import WorkflowLabel
 from basstler_domain_model.environment import (
     ClaudeCodeVariable,
 )
@@ -430,7 +430,7 @@ def test_accepts_a_remote_whose_owner_differs_only_in_case():
 
 def test_reports_missing_labels_without_creating_them():
     github = GitHubAnsweringFromMemory(
-        CREDENTIAL_OWNER, present_labels={GitHubLabel.MERGED}
+        CREDENTIAL_OWNER, present_labels={WorkflowLabel.MERGED}
     )
 
     labels_setup(github=github).check_labels()
@@ -440,15 +440,15 @@ def test_reports_missing_labels_without_creating_them():
 
 def test_creates_only_the_missing_labels_when_asked():
     github = GitHubAnsweringFromMemory(
-        CREDENTIAL_OWNER, present_labels=set(GitHubLabel) - {GitHubLabel.IN_REVIEW}
+        CREDENTIAL_OWNER, present_labels=set(WorkflowLabel) - {WorkflowLabel.IN_REVIEW}
     )
 
     labels_setup(SetupOption.CREATE_LABELS, github=github).check_labels()
 
     assert github.created_labels == [
         {
-            RestJSONKey.NAME: GitHubLabel.IN_REVIEW,
-            RestJSONKey.DESCRIPTION: GitHubLabel.IN_REVIEW.description,
+            RestJSONKey.NAME: WorkflowLabel.IN_REVIEW,
+            RestJSONKey.DESCRIPTION: WorkflowLabel.IN_REVIEW.description,
         }
     ]
 
@@ -458,4 +458,4 @@ def test_creates_every_label_a_fresh_repository_lacks():
 
     labels_setup(SetupOption.CREATE_LABELS, github=github).check_labels()
 
-    assert github.present_labels == set(GitHubLabel)
+    assert github.present_labels == set(WorkflowLabel)

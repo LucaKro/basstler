@@ -30,7 +30,7 @@ from basstler.plan_site.__main__ import (
     SiteDigest,
     SiteFile,
 )
-from basstler.github_labels import GitHubLabel
+from basstler.workflow_labels import WorkflowLabel
 from basstler_domain_model.github.pull_request_fields import (
     PullRequestField,
 )
@@ -142,7 +142,7 @@ def pull_request_source() -> RecordedPullRequestSource:
     return RecordedPullRequestSource(
         records={
             MERGED_PULL_REQUEST: PullRequestRecord(
-                state=PullRequestState.CLOSED, labels=[GitHubLabel.MERGED.value]
+                state=PullRequestState.CLOSED, labels=[WorkflowLabel.MERGED.value]
             ),
             OPEN_PULL_REQUEST: PullRequestRecord(
                 state=PullRequestState.OPEN, draft=True
@@ -476,7 +476,7 @@ def api_pull_request(
 
 
 def test_from_api_reads_label_names():
-    labels = [GitHubLabel.BUG.value, GitHubLabel.MERGED.value]
+    labels = [WorkflowLabel.BUG.value, WorkflowLabel.MERGED.value]
     record = PullRequestRecord.from_api(
         api_pull_request(
             MERGED_PULL_REQUEST,

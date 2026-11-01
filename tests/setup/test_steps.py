@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 
 import basstler.setup.steps
-from basstler.github_labels import GitHubLabel
+from basstler.workflow_labels import WorkflowLabel
 from basstler.setup.steps import (
     ForkActions,
     ForkLabels,
@@ -183,7 +183,7 @@ def test_each_label_carries_the_description_it_is_created_with() -> None:
     """
     Every label says what it means, and the creation command names the fork.
     """
-    for label in GitHubLabel:
+    for label in WorkflowLabel:
         assert label.description
         assert label.creation_command(FORK) == (
             f"gh label create {label.value} --repo {FORK.full_name} "
@@ -200,7 +200,7 @@ def test_the_labels_step_leads_with_the_page_that_creates_them_by_hand() -> None
     instructions = step.instructions()
     assert step.labels_url in instructions[0]
     assert [line for line in instructions if line.startswith("gh label create")] == [
-        label.creation_command(FORK) for label in GitHubLabel
+        label.creation_command(FORK) for label in WorkflowLabel
     ]
 
 

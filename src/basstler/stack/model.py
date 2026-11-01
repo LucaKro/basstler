@@ -17,7 +17,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
-from basstler.github_labels import GitHubLabel
+from basstler.workflow_labels import WorkflowLabel
 from basstler_domain_model.git.commands import IntegrationStrategy
 from basstler_domain_model.repository import Repository
 from basstler.stack.checkout import CurrentCheckout, LandedBranches
@@ -522,7 +522,7 @@ class Stack:
         return [
             branch
             for branch in self.promotion_order()
-            if GitHubLabel.PROMOTION_LINK_SENT not in branch.labels
+            if WorkflowLabel.PROMOTION_LINK_SENT not in branch.labels
         ]
 
     def restack_plan(self, stacked_on: str | None = None) -> list[RestackPlanEntry]:

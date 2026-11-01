@@ -19,7 +19,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
-from basstler.github_labels import GitHubLabel
+from basstler.workflow_labels import WorkflowLabel
 from basstler_domain_model.github.pull_request_fields import (
     PullRequestField,
 )
@@ -199,7 +199,7 @@ def promote(
         number = branch.pull_request_number
         pull_request = fork.pull_request(number)
         labels = PullRequestField.LABELS.read(pull_request, number)
-        if GitHubLabel.PROMOTION_LINK_SENT in labels or withheld in labels:
+        if WorkflowLabel.PROMOTION_LINK_SENT in labels or withheld in labels:
             continue
         description = PullRequestDescription(
             str(PullRequestField.BODY.read(pull_request, number) or "")
@@ -221,7 +221,7 @@ def promote(
         fork.replace_labels(
             number,
             LabelWrite.replacing(
-                labels, added=[GitHubLabel.PROMOTION_LINK_SENT]
+                labels, added=[WorkflowLabel.PROMOTION_LINK_SENT]
             ).labels,
         )
         promoted.append(
@@ -248,14 +248,14 @@ def clear_spent_promotion_labels(
     spent = [
         branch
         for branch in stack.maintained_branches()
-        if GitHubLabel.PROMOTION_LINK_SENT in branch.labels
+        if WorkflowLabel.PROMOTION_LINK_SENT in branch.labels
         and branch.status in {BranchStatus.IN_REVIEW, BranchStatus.MERGED}
     ]
     for branch in spent:
         fork.replace_labels(
             branch.pull_request_number,
             LabelWrite.replacing(
-                branch.labels, removed=[GitHubLabel.PROMOTION_LINK_SENT]
+                branch.labels, removed=[WorkflowLabel.PROMOTION_LINK_SENT]
             ).labels,
         )
     return tuple(branch.name for branch in spent)

@@ -13,13 +13,13 @@ from __future__ import annotations
 
 from enum import ReprEnum
 
-from basstler_domain_model.github.labels import Label
+from basstler_domain_model.github.labels import GitHubLabel
 from basstler_domain_model.repository import (
     Repository,
 )
 
 
-class GitHubLabel(Label, ReprEnum):
+class WorkflowLabel(GitHubLabel, ReprEnum):
     """
     Every label this tooling reads or applies, and therefore every one a fork must
     carry, each with the description it is created with.
@@ -28,7 +28,7 @@ class GitHubLabel(Label, ReprEnum):
     it.
     """
 
-    def __new__(cls, label: str, description: str) -> GitHubLabel:
+    def __new__(cls, label: str, description: str) -> WorkflowLabel:
         """
         Make a member that is its own label name and carries what the label means.
 

@@ -44,7 +44,7 @@ from basstler.bash import Bash
 from basstler_domain_model.class_property import (
     classproperty,
 )
-from basstler.github_labels import GitHubLabel
+from basstler.workflow_labels import WorkflowLabel
 from basstler_domain_model.environment import (
     ClaudeCodeVariable,
 )
@@ -366,7 +366,7 @@ class ForkLabels(SetupStep):
     @property
     def title(self) -> str:
         """See :attr:`SetupStep.title`."""
-        return f"Add {len(GitHubLabel)} labels to {self.repository.full_name}"
+        return f"Add {len(WorkflowLabel)} labels to {self.repository.full_name}"
 
     @property
     def reason(self) -> str:
@@ -385,7 +385,7 @@ class ForkLabels(SetupStep):
 
     def instructions(self) -> list[str]:
         """See :meth:`SetupStep.instructions`."""
-        commands = [label.creation_command(self.repository) for label in GitHubLabel]
+        commands = [label.creation_command(self.repository) for label in WorkflowLabel]
         return [
             f"By hand: {self.labels_url}",
             "Or, if you have the gh CLI:",

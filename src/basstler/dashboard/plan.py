@@ -188,7 +188,7 @@ class Item:
 
     is_bug_fix: bool = field(default=False, init=False)
     """
-    Whether this item's pull request carries :attr:`GitHubLabel.BUG`, filled in by
+    Whether this item's pull request carries :attr:`WorkflowLabel.BUG`, filled in by
     :meth:`DashboardRenderer.render`.
 
     Marks the item wherever it

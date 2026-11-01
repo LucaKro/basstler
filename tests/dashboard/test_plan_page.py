@@ -32,7 +32,7 @@ from basstler_domain_model.github.vocabulary import (
     PullRequestState,
 )
 from basstler.dashboard.publication import DashboardArtifact, PublicationField
-from basstler.github_labels import GitHubLabel
+from basstler.workflow_labels import WorkflowLabel
 from basstler.maintenance.description import UpstreamPullRequestLink
 from basstler_domain_model.repository import (
     Repository,
@@ -542,7 +542,7 @@ def test_item_is_a_bug_fix_when_its_pull_request_carries_the_bug_label():
             "1": PullRequestRecord(
                 state=PullRequestState.OPEN,
                 draft=True,
-                labels=[GitHubLabel.BUG.value],
+                labels=[WorkflowLabel.BUG.value],
             )
         }
     }
@@ -560,7 +560,7 @@ def test_item_is_not_a_bug_fix_when_its_pull_request_carries_other_labels():
             "1": PullRequestRecord(
                 state=PullRequestState.OPEN,
                 draft=True,
-                labels=[GitHubLabel.IN_REVIEW.value, StackLabel.SOMEBODY_ELSES],
+                labels=[WorkflowLabel.IN_REVIEW.value, StackLabel.SOMEBODY_ELSES],
             )
         }
     }
@@ -586,7 +586,7 @@ def test_bug_fix_stays_in_its_ordinary_action_group():
             "1": PullRequestRecord(
                 state=PullRequestState.OPEN,
                 draft=True,
-                labels=[GitHubLabel.BUG.value],
+                labels=[WorkflowLabel.BUG.value],
             )
         }
     }
@@ -604,7 +604,7 @@ def test_render_marks_a_bug_fix_sidebar_entry_with_a_bug_chip():
             "1": PullRequestRecord(
                 state=PullRequestState.OPEN,
                 draft=True,
-                labels=[GitHubLabel.BUG.value],
+                labels=[WorkflowLabel.BUG.value],
             )
         }
     }
@@ -640,7 +640,7 @@ def _renderer_with_one_bug_fix_and_one_other_entry() -> DashboardRenderer:
             "1": PullRequestRecord(
                 state=PullRequestState.OPEN,
                 draft=True,
-                labels=[GitHubLabel.BUG.value],
+                labels=[WorkflowLabel.BUG.value],
             ),
             "2": PullRequestRecord(state=PullRequestState.OPEN, draft=False),
         }

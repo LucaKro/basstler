@@ -10,7 +10,7 @@ import pytest
 
 import basstler.maintenance.__main__
 import basstler.maintenance.restack_procedure
-from basstler.github_labels import GitHubLabel
+from basstler.workflow_labels import WorkflowLabel
 from basstler.maintenance.commands import RunReportCommand
 from basstler.maintenance.constants import MaintenanceText
 from basstler.maintenance.description import PullRequestDescription
@@ -69,7 +69,7 @@ def test_the_promotion_link_goes_into_the_description_and_the_branch_is_labelled
     assert PromotionSampleText.SUMMARY in written.body
     assert fork.label_writes == [
         RecordedLabelWrite(
-            StackPullRequestNumber.PARENT, (GitHubLabel.PROMOTION_LINK_SENT,)
+            StackPullRequestNumber.PARENT, (WorkflowLabel.PROMOTION_LINK_SENT,)
         )
     ]
 
@@ -79,7 +79,7 @@ def test_a_branch_already_carrying_the_link_label_is_not_promoted_again(
 ):
     a_parent_and_child(fork_checkout)
     fork = RecordingPullRequests(
-        labels={StackPullRequestNumber.PARENT: [GitHubLabel.PROMOTION_LINK_SENT]}
+        labels={StackPullRequestNumber.PARENT: [WorkflowLabel.PROMOTION_LINK_SENT]}
     )
 
     promoted = promote(a_stack(fork_checkout, the_board()), fork, PromotionSummaries())
@@ -129,7 +129,7 @@ def test_the_promotion_label_write_keeps_a_label_added_since_the_board_was_taken
     assert fork.label_writes == [
         RecordedLabelWrite(
             StackPullRequestNumber.PARENT,
-            (StackLabel.SOMEBODY_ELSES, GitHubLabel.PROMOTION_LINK_SENT),
+            (StackLabel.SOMEBODY_ELSES, WorkflowLabel.PROMOTION_LINK_SENT),
         )
     ]
 
@@ -144,7 +144,7 @@ def test_a_promoted_branch_that_reached_review_has_its_link_label_removed(
     a_parent_and_child(fork_checkout)
     board = the_board()
     board[0].labels = [
-        GitHubLabel.PROMOTION_LINK_SENT,
+        WorkflowLabel.PROMOTION_LINK_SENT,
         make_configuration().in_review_label,
     ]
     board[0].upstream_pull_request = StackPullRequestNumber.UPSTREAM

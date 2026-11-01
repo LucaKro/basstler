@@ -13,7 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from enum import IntEnum
 
-from basstler.github_labels import GitHubLabel
+from basstler.workflow_labels import WorkflowLabel
 from basstler.maintenance.fast_forward import FastForwardOutcome, FastForwardReport
 from basstler.maintenance.promotion import Promotion
 from basstler.maintenance.report import MaintenanceReport
@@ -165,7 +165,7 @@ class LargeBoard:
                     else self.branch_name(index - 1)
                 ),
                 labels=(
-                    [GitHubLabel.PROMOTION_LINK_SENT]
+                    [WorkflowLabel.PROMOTION_LINK_SENT]
                     if self.promoted <= index < linked_end
                     else []
                 ),

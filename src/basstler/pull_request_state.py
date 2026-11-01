@@ -16,7 +16,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any
 
-from basstler.github_labels import GitHubLabel
+from basstler.workflow_labels import WorkflowLabel
 from basstler_domain_model.github.pull_request_fields import (
     PullRequestField,
     PullRequestPayload,
@@ -137,7 +137,7 @@ class PullRequestRecord:
     """
     The pull request's raw GitHub labels, exactly as GitHub reports them.
 
-    Kept as ``list[str]`` rather than ``list[GitHubLabel]``: a real pull request can carry
+    Kept as ``list[str]`` rather than ``list[WorkflowLabel]``: a real pull request can carry
     labels this codebase has no reason to know about (other.
 
     automation's own labels, GitHub's defaults), so this field must tolerate
@@ -146,7 +146,7 @@ class PullRequestRecord:
     case in this repo's history: a pull request merged out-of-band (its
     branch pushed directly, then the pull request closed by hand rather than
     through GitHub's merge button) never gets ``merged_at`` set, so the
-    closer manually adds the :attr:`GitHubLabel.MERGED` label to record
+    closer manually adds the :attr:`WorkflowLabel.MERGED` label to record
     what actually happened - see :meth:`was_merged`.
     """
 
@@ -157,15 +157,15 @@ class PullRequestRecord:
     """
 
     @property
-    def identified_labels(self) -> frozenset[GitHubLabel]:
+    def identified_labels(self) -> frozenset[WorkflowLabel]:
         """The subset of :attr:`labels` that match a known
-        :class:`GitHubLabel` - any other raw label this pull request
+        :class:`WorkflowLabel` - any other raw label this pull request
         happens to carry is silently excluded, not an error, since
         :attr:`labels` is deliberately not limited to labels this codebase
         recognizes."""
-        known_values = {member.value for member in GitHubLabel}
+        known_values = {member.value for member in WorkflowLabel}
         return frozenset(
-            GitHubLabel(label) for label in self.labels if label in known_values
+            WorkflowLabel(label) for label in self.labels if label in known_values
         )
 
     @classmethod
@@ -225,10 +225,10 @@ class PullRequestRecord:
     def was_merged(self) -> bool:
         """Whether this pull request's changes actually landed - GitHub's own
         :attr:`merged_at`, or (for an out-of-band merge GitHub never
-        recorded) the manually-applied :attr:`GitHubLabel.MERGED`
+        recorded) the manually-applied :attr:`WorkflowLabel.MERGED`
         label."""
         return (
-            self.merged_at is not None or GitHubLabel.MERGED in self.identified_labels
+            self.merged_at is not None or WorkflowLabel.MERGED in self.identified_labels
         )
 
     @classmethod

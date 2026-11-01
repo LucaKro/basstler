@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from basstler.github_labels import GitHubLabel
+from basstler.workflow_labels import WorkflowLabel
 from basstler.maintenance.commands import RunReportCommand
 from basstler.maintenance.exceptions import MarkdownLinkTargetError
 from basstler.maintenance.fast_forward import FastForwardOutcome, FastForwardReport
@@ -162,7 +162,7 @@ def test_a_link_built_this_pass_names_its_number_title_and_branch():
 
 
 def test_a_link_sent_by_an_earlier_pass_and_not_yet_acted_on_is_listed_again():
-    stack = a_titled_stack(child_labels=[GitHubLabel.PROMOTION_LINK_SENT])
+    stack = a_titled_stack(child_labels=[WorkflowLabel.PROMOTION_LINK_SENT])
     summary = FinishSummary(MaintenanceReport(), stack)
 
     (entry,) = section_of(summary.as_markdown(), FinishSummaryHeading.PENDING_LINKS)
@@ -175,7 +175,7 @@ def test_no_create_link_is_printed_since_each_description_carries_its_own():
     A create-link prefills a whole description into its URL, so a handful of them is
     most of a summary; the link stays under the description's own Promote heading.
     """
-    stack = a_titled_stack(child_labels=[GitHubLabel.PROMOTION_LINK_SENT])
+    stack = a_titled_stack(child_labels=[WorkflowLabel.PROMOTION_LINK_SENT])
     report = MaintenanceReport(promoted=(a_promotion(body_was_truncated=True),))
 
     markdown = FinishSummary(report, stack).as_markdown()
@@ -195,7 +195,7 @@ def test_a_link_sent_by_an_earlier_pass_is_listed_without_reading_its_descriptio
             an_api_record(
                 number=StackPullRequestNumber.CHILD,
                 head=StackBranch.CHILD,
-                labels=[GitHubLabel.PROMOTION_LINK_SENT],
+                labels=[WorkflowLabel.PROMOTION_LINK_SENT],
                 body=DatasetLocation.DESCRIPTION_WITH_PROMOTION_PROSE.read_text(),
                 title=PromotionSampleText.TITLE,
             )
@@ -215,7 +215,7 @@ def test_a_link_sent_by_an_earlier_pass_is_listed_without_reading_its_descriptio
 
 def test_a_link_sent_earlier_that_is_now_in_review_is_not_pending():
     stack = a_titled_stack(
-        child_labels=[GitHubLabel.PROMOTION_LINK_SENT],
+        child_labels=[WorkflowLabel.PROMOTION_LINK_SENT],
         child_upstream_pull_request=StackPullRequestNumber.UPSTREAM,
     )
     summary = FinishSummary(MaintenanceReport(), stack)

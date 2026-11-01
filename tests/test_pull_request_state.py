@@ -17,7 +17,7 @@ from basstler.pull_request_state import (
 from basstler_domain_model.github.vocabulary import (
     PullRequestState,
 )
-from basstler.github_labels import GitHubLabel
+from basstler.workflow_labels import WorkflowLabel
 from basstler_domain_model.github.pull_request_fields import (
     PullRequestField,
 )
@@ -142,8 +142,8 @@ def test_identified_labels_recognizes_known_labels():
         state=PullRequestState.OPEN, labels=["in-review", "merged"]
     )
     assert record.identified_labels == {
-        GitHubLabel.IN_REVIEW,
-        GitHubLabel.MERGED,
+        WorkflowLabel.IN_REVIEW,
+        WorkflowLabel.MERGED,
     }
 
 

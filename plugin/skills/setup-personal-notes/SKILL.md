@@ -138,7 +138,7 @@ The owner check and the label check need a GitHub token (`GH_TOKEN` or
 `GITHUB_TOKEN`) and a notes remote on GitHub; without them the command says
 it skipped both and carries on. A session usually has no token, so check the
 labels with `mcp__github__get_label` instead, one call per label that
-`"${BASSTLER_PYTHON}" -c 'from basstler.github_labels import GitHubLabel; print(*GitHubLabel)'`
+`"${BASSTLER_PYTHON}" -c 'from basstler.workflow_labels import WorkflowLabel; print(*WorkflowLabel)'`
 lists. A `404` means missing.
 
 **Labels are visible to everyone who sees the repository, so ask before

@@ -38,7 +38,7 @@ from basstler.exit_codes import (
     DomainModelFailure,
     PersonalNotesSetupExitCode,
 )
-from basstler.github_labels import GitHubLabel
+from basstler.workflow_labels import WorkflowLabel
 from basstler_domain_model.environment import (
     ClaudeCodeVariable,
 )
@@ -382,7 +382,7 @@ class PersonalNotesSetup:
             return
         repository = self.github.repository.full_name
         present = self.github.labels()
-        missing = [label for label in GitHubLabel if label not in present]
+        missing = [label for label in WorkflowLabel if label not in present]
         if not missing:
             logger.info(f"Every label this tooling uses is on '{repository}'.")
             return

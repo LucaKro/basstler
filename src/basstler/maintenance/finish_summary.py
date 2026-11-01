@@ -16,7 +16,7 @@ from enum import StrEnum
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from basstler.github_labels import GitHubLabel
+from basstler.workflow_labels import WorkflowLabel
 from basstler.maintenance.check_overview import CheckOverview
 from basstler.maintenance.constants import MaintenanceText
 from basstler.maintenance.exceptions import MarkdownLinkTargetError
@@ -329,7 +329,7 @@ class FinishSummary:
             branch.name
             for branch in self.stack.maintained_branches()
             if branch.name not in promoted
-            and GitHubLabel.PROMOTION_LINK_SENT in branch.labels
+            and WorkflowLabel.PROMOTION_LINK_SENT in branch.labels
             and branch.status not in {BranchStatus.IN_REVIEW, BranchStatus.MERGED}
         ]
         return [
